@@ -22,10 +22,16 @@ class WispFM extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+          scrollbarTheme: ScrollbarThemeData(
+            thumbVisibility: WidgetStatePropertyAll(true),
+          ),
         ),
         darkTheme: ThemeData(
           brightness: .dark,
           colorScheme: .fromSeed(seedColor: Colors.deepPurple, brightness: .dark),
+          scrollbarTheme: ScrollbarThemeData(
+            thumbVisibility: WidgetStatePropertyAll(true),
+          ),
         ),
         home: const Scaffold(
           body: ExplorerScaffold(),

@@ -64,10 +64,12 @@ FileData _getFileData(String path, FileStat stat) {
     FileSystemEntityType.directory => DirectoryData(
       path: path,
       size: stat.size,
+      modified: stat.modified,
     ),
     _ => FileData(
       path: path,
       size: stat.size,
+      modified: stat.modified,
     ),
     // TODO: 2 we should probably handle all cases
   };
