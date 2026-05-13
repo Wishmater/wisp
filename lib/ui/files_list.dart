@@ -18,9 +18,6 @@ class FilesList extends ConsumerWidget {
     final currentDirectoryValue = ref.watch(currentDirectory);
     final verticalController = ScrollController();
     final horizontalController = ScrollController();
-    verticalController.addListener(() {
-      // print(horizontalController.positions.firstOrNull?.axis);
-    });
     return ScrollbarFromZero(
       controller: verticalController,
       applyOpacityGradientToChildren: false,
