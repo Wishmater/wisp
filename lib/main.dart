@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:wisp/providers/files.dart' as f;
 import 'package:wisp/ui/explorer_scaffold.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   windowManager.setAsFrameless();
+  await f.readDirectory.init();
   runApp(const WispFM());
 }
 
