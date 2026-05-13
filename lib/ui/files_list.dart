@@ -21,7 +21,11 @@ class FilesList extends ConsumerWidget {
               leading: Icon(fileData is DirectoryData ? Icons.folder : Icons.file_copy),
               title: Text(fileData.filename),
               onTap: () {
-                setCurrentDirectory(ref, fileData.path);
+                if (fileData is DirectoryData) {
+                  setCurrentDirectory(ref, fileData.path);
+                } else {
+                  openFile(fileData);
+                }
               },
             );
           },

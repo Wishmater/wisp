@@ -21,6 +21,10 @@ class WispFM extends StatelessWidget {
         theme: ThemeData(
           colorScheme: .fromSeed(seedColor: Colors.deepPurple),
         ),
+        darkTheme: ThemeData(
+          brightness: .dark,
+          colorScheme: .fromSeed(seedColor: Colors.deepPurple, brightness: .dark),
+        ),
         home: const Scaffold(
           body: ExplorerScaffold(),
         ),

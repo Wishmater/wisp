@@ -19,6 +19,10 @@ dependencies:
   animations: ^2.2.0
   window_manager: ^0.4.3
 
+  xdg_mime:
+    git:
+      url: https://github.com/ross96D/xdg-mime.dart
+
   fz_actions:
     path: ../from_zero_ui/packages/fz_actions/
   fz_api_handling:

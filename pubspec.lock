@@ -1338,6 +1338,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  xdg_mime:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: "364e5c72fe074c3561de7986d8519c3c3dedb6b9"
+      url: "https://github.com/ross96D/xdg-mime.dart"
+    source: git
+    version: "1.0.0"
   xml:
     dependency: transitive
     description:

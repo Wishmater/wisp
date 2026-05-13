@@ -19,6 +19,10 @@ void setCurrentDirectory(WidgetRef ref, String path) {
   ref.read(currentDirectory.state).state = path;
 }
 
+// final mimedbFuture = SharedMimeInfo.open();
+// final demFuture = DesktopEntryManager.create();
+void openFile(FileData fileData) {}
+
 final ApiProviderFamily<FileData, String> fileDetails = ApiProviderFamily(
   (ref, path) {
     return ApiState(ref, (apiState) async {
