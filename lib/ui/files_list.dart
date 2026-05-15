@@ -37,7 +37,7 @@ class FilesList extends ConsumerWidget {
                 rowHeight: 48,
                 horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
                 verticalDetails: ScrollableDetails.vertical(controller: verticalController),
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
                 delegate: FilesChildDelegate(
                   maxXIndex: columns.length - 1,
                   maxYIndex: data.length - 1,
@@ -168,6 +168,14 @@ class FilesListViewport extends TwoDimensionalViewport {
   @override
   void updateRenderObject(BuildContext context, RenderFilesListViewport renderObject) {
     renderObject
+      ..horizontalOffset = horizontalOffset
+      ..horizontalAxisDirection = horizontalAxisDirection
+      ..verticalOffset = verticalOffset
+      ..verticalAxisDirection = verticalAxisDirection
+      ..mainAxis = mainAxis
+      ..delegate = delegate
+      ..cacheExtent = cacheExtent
+      ..clipBehavior = clipBehavior
       ..rowCount = rowCount
       ..colCount = colCount
       ..rowHeight = rowHeight
@@ -177,12 +185,6 @@ class FilesListViewport extends TwoDimensionalViewport {
 }
 
 class RenderFilesListViewport extends RenderTwoDimensionalViewport {
-  int rowCount;
-  int colCount;
-  double rowHeight;
-  List<double> columnSizes;
-  EdgeInsets padding;
-
   RenderFilesListViewport({
     required super.horizontalOffset,
     required super.horizontalAxisDirection,
@@ -191,19 +193,63 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
     required super.delegate,
     required super.mainAxis,
     required super.childManager,
-    required this.rowCount,
-    required this.colCount,
-    required this.rowHeight,
-    required this.columnSizes,
-    this.padding = EdgeInsets.zero,
-  });
+    required int rowCount,
+    required int colCount,
+    required double rowHeight,
+    required List<double> columnSizes,
+    EdgeInsets padding = EdgeInsets.zero,
+  }) : _rowCount = rowCount,
+       _colCount = colCount,
+       _rowHeight = rowHeight,
+       _columnSizes = columnSizes,
+       _padding = padding;
+
+  int get rowCount => _rowCount;
+  int _rowCount;
+  set rowCount(int value) {
+    if (_rowCount == value) return;
+    _rowCount = value;
+    markNeedsLayout();
+  }
+
+  int get colCount => _colCount;
+  int _colCount;
+  set colCount(int value) {
+    if (_colCount == value) return;
+    _colCount = value;
+    markNeedsLayout();
+  }
+
+  double get rowHeight => _rowHeight;
+  double _rowHeight;
+  set rowHeight(double value) {
+    if (_rowHeight == value) return;
+    _rowHeight = value;
+    markNeedsLayout();
+  }
+
+  List<double> get columnSizes => _columnSizes;
+  List<double> _columnSizes;
+  set columnSizes(List<double> value) {
+    if (_columnSizes == value) return;
+    _columnSizes = value;
+    markNeedsLayout();
+  }
+
+  EdgeInsets get padding => _padding;
+  EdgeInsets _padding;
+  set padding(EdgeInsets value) {
+    if (_padding == value) return;
+    _padding = value;
+    markNeedsLayout();
+  }
 
   @override
   void layoutChildSequence() {
     final cellHeight = rowHeight;
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
-    final maxWidth = columnOffsets.last + columnSizes.last;
-    final maxHeight = cellHeight * rowCount;
+    final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal;
+    final maxHeight = cellHeight * rowCount + padding.vertical;
     horizontalOffset.applyContentDimensions(0, (maxWidth - viewportDimension.width).coerceAtLeast(0));
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
@@ -230,7 +276,7 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
         rowGesture.layout(BoxConstraints.tight(Size(maxWidth, cellHeight)));
         rowGestureParentData.layoutOffset = Offset(
           0,
-          row * cellHeight - verticalOffset.pixels,
+          padding.top + row * cellHeight - verticalOffset.pixels,
         );
       }
       // Layout row cells
@@ -291,5 +337,13 @@ class FilesChildDelegate extends TwoDimensionalChildBuilderDelegate {
       return null; // TODO: 3 implement selection UI
     }
     return builder(context, vicinity);
+  }
+
+  @override
+  bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate) {
+    if (oldDelegate is! FilesChildDelegate) return true;
+    if (onRowTap != oldDelegate.onRowTap) return true;
+    if (onRowDoubleTap != oldDelegate.onRowDoubleTap) return true;
+    return super.shouldRebuild(oldDelegate);
   }
 }
