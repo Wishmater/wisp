@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/services/disk_type.dart';
+import 'package:wisp/services/xdg_mime.dart';
 
 final dirReader = HddAwareDirReader(
   ssdReader: IsolateDirReader(SyncDirReader()),
@@ -128,8 +129,9 @@ class IsolateDirReader extends DirReader {
     instaceReciever.close();
   }
 
-  static void _isolate(SendPort sp) {
+  static Future<void> _isolate(SendPort sp) async {
     ReceivePort rpIsolate = ReceivePort();
+    await initXdgMime();
     sp.send(rpIsolate.sendPort);
 
     rpIsolate.listen((msg) async {

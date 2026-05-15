@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wisp/services/dir_reader.dart';
+import 'package:wisp/services/xdg_mime.dart';
 
 /// Benchmarks all DirReader implementations against a real directory.
 ///
@@ -33,6 +34,8 @@ void main() {
         print('');
         return;
       }
+      await initXdgMime();
+
       final iterations = int.tryParse(Platform.environment['ITERATIONS'] ?? '') ?? 5;
 
       final readers = <String, DirReader>{
@@ -41,8 +44,8 @@ void main() {
         'PileAwait': PileAwaitDirReader(),
         'Isolate(Sync)': IsolateDirReader(SyncDirReader()),
         'Isolate(PileAwait)': IsolateDirReader(PileAwaitDirReader()),
-        'Compute(Sync)': ComputeDirReader(SyncDirReader()),
-        'Compute(PileAwait)': ComputeDirReader(PileAwaitDirReader()),
+        // 'Compute(Sync)': ComputeDirReader(SyncDirReader()),
+        // 'Compute(PileAwait)': ComputeDirReader(PileAwaitDirReader()),
         'HddAware(Best)': HddAwareDirReader(
           ssdReader: IsolateDirReader(SyncDirReader()),
           hddReader: IsolateDirReader(PileAwaitDirReader()),

@@ -2,16 +2,19 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
+import 'package:wisp/services/xdg_mime.dart';
 
 class FileData {
   String path;
   int size;
   DateTime modified;
+  String? mimeType;
 
   FileData({
     required this.path,
     required this.size,
     required this.modified,
+    required this.mimeType,
   });
 
   @override
@@ -23,18 +26,22 @@ class FileData {
   int get hashCode => path.hashCode;
 
   String get filename => p.basename(path);
+  String get extension => p.extension(path);
 
   factory FileData.fromStat(String path, FileStat stat) {
+    final mimeType = mimedb.getMimeType(p.basename(path));
     return switch (stat.type) {
       FileSystemEntityType.directory => DirectoryData(
         path: path,
         size: stat.size,
         modified: stat.modified,
+        mimeType: mimeType,
       ),
       _ => FileData(
         path: path,
         size: stat.size,
         modified: stat.modified,
+        mimeType: mimeType,
       ),
       // TODO: 2 we should probably handle all cases
     };
@@ -64,6 +71,7 @@ class DirectoryData extends FileData {
     required super.path,
     required super.size,
     required super.modified,
+    required super.mimeType,
   });
 }
 

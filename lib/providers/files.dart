@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/services/dir_reader.dart';
+import 'package:wisp/services/xdg_mime.dart';
+import 'package:xdg_mime/xdg_mime.dart';
 
 final disposeDelay = Duration(seconds: 15);
 
@@ -26,9 +28,32 @@ class CurrentDirectoryNotifier extends Notifier<String> {
   }
 }
 
-// final mimedbFuture = SharedMimeInfo.open();
-// final demFuture = DesktopEntryManager.create();
-void openFile(FileData fileData) {}
+bool openFile(FileData fileData) {
+  final mimeType = fileData.mimeType;
+  if (mimeType == null) {
+    return false;
+  }
+  List<String> defaults = XdgMimeApps.defaults(mimeType);
+  if (defaults.isEmpty) {
+    for (final ancester in mimedb.getAncesters(mimeType)) {
+      defaults = XdgMimeApps.defaults(ancester);
+      if (defaults.isNotEmpty) {
+        break;
+      }
+    }
+  }
+  print(
+    "Default application for ${fileData.mimeType}: ${defaults.map((e) {
+      final entry = desktopEntryManager.get_(e);
+      return "$e ${entry?.fields.name}";
+    })}",
+  );
+  if (defaults.isEmpty) {
+    return false;
+  } else {
+    return true;
+  }
+}
 
 final fileDetails = ApiProviderFamily<FileData, String>(
   (path) => ApiState(
