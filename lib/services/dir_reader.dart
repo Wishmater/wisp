@@ -5,7 +5,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:wisp/models/file_data.dart';
 
-final dirReader = _PileAwaitDirReader();
+final dirReader = PileAwaitDirReader();
 
 sealed class DirReader {
   Future<void> init() async {}
@@ -13,8 +13,8 @@ sealed class DirReader {
   Stream<FileData> readDir(Directory directory);
 }
 
-// ignore: unused_element
-class _SimpleDirReader extends DirReader {
+@visibleForTesting
+class SimpleDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
     await for (final e in directory.list()) {
@@ -24,8 +24,8 @@ class _SimpleDirReader extends DirReader {
   }
 }
 
-// ignore: unused_element
-class _PileAwaitDirReader extends DirReader {
+@visibleForTesting
+class PileAwaitDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
     final list = <(String, Future<FileStat>)>[];
@@ -49,8 +49,8 @@ class _FileDataIsolateReadDirData extends _IsolateReadDirData {
 
 class _EndIsolateReadDirData extends _IsolateReadDirData {}
 
-// ignore: unused_element
-class _IsolateDirReader extends DirReader {
+@visibleForTesting
+class IsolateDirReader extends DirReader {
   late final SendPort _sp;
 
   @override
@@ -110,8 +110,8 @@ class _IsolateDirReader extends DirReader {
   }
 }
 
-// ignore: unused_element
-class _SyncDirReader extends DirReader {
+@visibleForTesting
+class SyncDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
     for (final e in directory.listSync()) {
@@ -121,11 +121,11 @@ class _SyncDirReader extends DirReader {
   }
 }
 
-// ignore: unused_element
-class _ComputeDirReader extends DirReader {
+@visibleForTesting
+class ComputeDirReader extends DirReader {
   DirReader reader;
 
-  _ComputeDirReader(this.reader);
+  ComputeDirReader(this.reader);
 
   @override
   Stream<FileData> readDir(Directory directory) async* {

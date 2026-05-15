@@ -46,17 +46,9 @@ final directoryList = ApiProviderFamily<List<FileData>, String>(
     (apiState) async {
       final directory = Directory(path);
       // TODO: 2 maybe we could actually listen to the stream and paint the UI in multiple steps? that would be cool maybe?
-      final sw = Stopwatch()..start();
       final stream = dirReader.readDir(directory);
       final response = await stream.toList();
-      print("READ DIR DELAY: ${sw.elapsed}");
       return response;
-      // final list = <FileData>[];
-      // await for (final e in directory.list()) {
-      //   final stat = await e.stat();
-      //   list.add(_getFileData(e.absolute.path, stat));
-      // }
-      // return list;
     },
     disposeDelay: disposeDelay,
   ),
