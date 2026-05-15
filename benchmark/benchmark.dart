@@ -16,68 +16,73 @@ import 'package:wisp/services/dir_reader.dart';
 /// ITERATIONS  – number of measurement passes per reader (default: 5)
 
 void main() {
-  test('DirReader benchmark', () async {
-    final dirPath = Platform.environment['DIR'];
-    if (dirPath == null || dirPath.isEmpty) {
-      print('');
-      print('Usage: DIR=/path/to/dir flutter test benchmark/benchmark.dart');
-      print('');
-      return;
-    }
-    final dir = Directory(dirPath);
-    if (!dir.existsSync()) {
-      print('');
-      print('Directory not found: $dirPath');
-      print('');
-      return;
-    }
-    final iterations = int.tryParse(Platform.environment['ITERATIONS'] ?? '') ?? 5;
-
-    final readers = <String, DirReader>{
-      'SimpleDirReader': SimpleDirReader(),
-      'PileAwaitDirReader': PileAwaitDirReader(),
-      'IsolateDirReader': IsolateDirReader(),
-      'SyncDirReader': SyncDirReader(),
-      'Compute(Sync)': ComputeDirReader(SyncDirReader()),
-      'Compute(PileAwait)': ComputeDirReader(PileAwaitDirReader()),
-    };
-
-    print('');
-    print('Directory: $dirPath');
-    print('Iterations: $iterations');
-    print('');
-    print('Warming up...');
-
-    for (final entry in readers.entries) {
-      await entry.value.init();
-    }
-    for (final entry in readers.entries) {
-      await entry.value.readDir(dir).drain();
-    }
-
-    print('Running $iterations passes...\n');
-
-    final allResults = <String, List<Duration>>{};
-    final sw = Stopwatch();
-    int fileCount = 0;
-
-    for (var i = 0; i < iterations; i++) {
-      for (final entry in readers.entries) {
-        final name = entry.key;
-        final reader = entry.value;
-
-        sw.reset();
-        sw.start();
-        final files = await reader.readDir(dir).toList();
-        sw.stop();
-
-        if (i == 0) fileCount = files.length;
-        allResults.putIfAbsent(name, () => []).add(sw.elapsed);
+  test(
+    'DirReader benchmark',
+    () async {
+      final dirPath = Platform.environment['DIR'];
+      if (dirPath == null || dirPath.isEmpty) {
+        print('');
+        print('Usage: DIR=/path/to/dir flutter test benchmark/benchmark.dart');
+        print('');
+        return;
       }
-    }
+      final dir = Directory(dirPath);
+      if (!dir.existsSync()) {
+        print('');
+        print('Directory not found: $dirPath');
+        print('');
+        return;
+      }
+      final iterations = int.tryParse(Platform.environment['ITERATIONS'] ?? '') ?? 5;
 
-    _printResults(allResults, fileCount, iterations);
-  });
+      final readers = <String, DirReader>{
+        'Sync': SyncDirReader(),
+        'Simple': SimpleDirReader(),
+        'PileAwait': PileAwaitDirReader(),
+        'Isolate(Sync)': IsolateDirReader(SyncDirReader()),
+        'Isolate(PileAwait)': IsolateDirReader(PileAwaitDirReader()),
+        'Compute(Sync)': ComputeDirReader(SyncDirReader()),
+        'Compute(PileAwait)': ComputeDirReader(PileAwaitDirReader()),
+      };
+
+      print('');
+      print('Directory: $dirPath');
+      print('Iterations: $iterations');
+      print('');
+      print('Warming up...');
+
+      for (final entry in readers.entries) {
+        await entry.value.init();
+      }
+      for (final entry in readers.entries) {
+        await entry.value.readDir(dir).drain();
+      }
+
+      print('Running $iterations passes...\n');
+
+      final allResults = <String, List<Duration>>{};
+      final sw = Stopwatch();
+      int fileCount = 0;
+
+      for (var i = 0; i < iterations; i++) {
+        for (final entry in readers.entries) {
+          final name = entry.key;
+          final reader = entry.value;
+
+          sw.reset();
+          sw.start();
+          final files = await reader.readDir(dir).toList();
+          sw.stop();
+
+          if (i == 0) fileCount = files.length;
+          allResults.putIfAbsent(name, () => []).add(sw.elapsed);
+        }
+      }
+
+      _printResults(allResults, fileCount, iterations);
+    },
+    timeout: Timeout.none,
+  );
 }
 
 void _printResults(Map<String, List<Duration>> allResults, int fileCount, int iterations) {
