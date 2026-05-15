@@ -29,7 +29,7 @@ class FileData {
   String get extension => p.extension(path);
 
   factory FileData.fromStat(String path, FileStat stat) {
-    final mimeType = mimedb.getMimeType(p.basename(path));
+    final mimeType = mimedb.getMimeType(path);
     return switch (stat.type) {
       FileSystemEntityType.directory => DirectoryData(
         path: path,

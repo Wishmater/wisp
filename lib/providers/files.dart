@@ -31,6 +31,7 @@ class CurrentDirectoryNotifier extends Notifier<String> {
 bool openFile(FileData fileData) {
   final mimeType = fileData.mimeType;
   if (mimeType == null) {
+    print("Empty mime type");
     return false;
   }
   List<String> defaults = XdgMimeApps.defaults(mimeType);
