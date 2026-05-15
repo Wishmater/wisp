@@ -18,6 +18,7 @@ class FilesList extends ConsumerWidget {
     final currentDirectoryValue = ref.watch(currentDirectory);
     final verticalController = ScrollController();
     final horizontalController = ScrollController();
+    // TODO: 2 implement double-scrollbar support in ScrollbarFromZero
     return ScrollbarFromZero(
       controller: verticalController,
       applyOpacityGradientToChildren: false,

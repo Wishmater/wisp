@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 
@@ -21,6 +23,22 @@ class FileData {
   int get hashCode => path.hashCode;
 
   String get filename => p.basename(path);
+
+  factory FileData.fromStat(String path, FileStat stat) {
+    return switch (stat.type) {
+      FileSystemEntityType.directory => DirectoryData(
+        path: path,
+        size: stat.size,
+        modified: stat.modified,
+      ),
+      _ => FileData(
+        path: path,
+        size: stat.size,
+        modified: stat.modified,
+      ),
+      // TODO: 2 we should probably handle all cases
+    };
+  }
 
   dynamic getStatType(FileStatType type) {
     return switch (type) {
