@@ -93,6 +93,7 @@ class IsolateDirReader extends DirReader {
       final data = msg as _IsolateReadDirData;
       switch (data) {
         case _FileDataIsolateReadDirData(:final fileData):
+          // TODO: 2 should readDir just always return Stream<Iterable<FileData>>  ?
           for (final data in fileData) {
             response.add(data);
           }
