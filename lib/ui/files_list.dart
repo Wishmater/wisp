@@ -2,9 +2,9 @@ import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fz_api_handling/fz_api_handling.dart';
-import 'package:fz_opacity_gradient/fz_opacity_gradient.dart';
-import 'package:fz_scrollbar/fz_scrollbar.dart';
+import 'package:from_zero_ui/packages/fz_api_handling.dart';
+import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
+import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/providers/files.dart';
 
@@ -40,10 +40,10 @@ class FilesList extends ConsumerWidget {
                 delegate: FilesChildDelegate(
                   maxXIndex: columns.length - 1,
                   maxYIndex: data.length - 1,
-                  onRowTap: (index) {
+                  onRowDoubleTap: (index) {
                     final fileData = data[index];
                     if (fileData is DirectoryData) {
-                      setCurrentDirectory(ref, fileData.path);
+                      ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
                     } else {
                       openFile(fileData);
                     }

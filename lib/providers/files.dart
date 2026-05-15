@@ -3,49 +3,55 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fz_api_handling/fz_api_handling.dart';
+import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:wisp/models/file_data.dart';
 
 final disposeDelay = Duration(seconds: 15);
 
-final currentDirectory = StateProvider<String>((ref) {
-  return File('').absolute.path; // TODO: 1 this should probably come from args
+final currentDirectory = NotifierProvider<CurrentDirectoryNotifier, String>(() {
+  return CurrentDirectoryNotifier();
 });
 
-void goUp(WidgetRef ref) {
-  final state = ref.read(currentDirectory.state);
-  state.state = File(state.state).parent.absolute.path;
-}
+class CurrentDirectoryNotifier extends Notifier<String> {
+  @override
+  String build() {
+    return File('').absolute.path; // TODO: 1 this should probably come from args
+  }
 
-void setCurrentDirectory(WidgetRef ref, String path) {
-  ref.read(currentDirectory.state).state = path;
+  void goUp() {
+    state = File(state).parent.absolute.path;
+  }
+
+  void setCurrentDirectory(String path) {
+    state = path;
+  }
 }
 
 // final mimedbFuture = SharedMimeInfo.open();
 // final demFuture = DesktopEntryManager.create();
 void openFile(FileData fileData) {}
 
-final ApiProviderFamily<FileData, String> fileDetails = ApiProviderFamily(
-  (ref, path) {
-    return ApiState(ref, (apiState) async {
+final fileDetails = ApiProviderFamily<FileData, String>(
+  (path) => ApiState(
+    (apiState) async {
       final file = File(path);
       final stat = await file.stat();
       return _getFileData(path, stat);
-    });
-  },
-  disposeDelay: disposeDelay,
+    },
+    disposeDelay: disposeDelay,
+  ),
 );
 
 final readDirectory = _PileAwait();
 
-final ApiProviderFamily<List<FileData>, String> directoryList = ApiProviderFamily(
-  (ref, path) {
-    return ApiState(ref, (apiState) async {
+final directoryList = ApiProviderFamily<List<FileData>, String>(
+  (path) => ApiState(
+    (apiState) async {
       final directory = Directory(path);
       // TODO: 2 maybe we could actually listen to the stream and paint the UI in multiple steps? that would be cool maybe?
       final sw = Stopwatch()..start();
       final stream = readDirectory.readDir(directory);
-      final response =  await stream.toList();
+      final response = await stream.toList();
       print("READ DIR DELAY: ${sw.elapsed}");
       return response;
       // final list = <FileData>[];
@@ -54,9 +60,9 @@ final ApiProviderFamily<List<FileData>, String> directoryList = ApiProviderFamil
       //   list.add(_getFileData(e.absolute.path, stat));
       // }
       // return list;
-    });
-  },
-  disposeDelay: disposeDelay,
+    },
+    disposeDelay: disposeDelay,
+  ),
 );
 
 FileData _getFileData(String path, FileStat stat) {
@@ -83,7 +89,7 @@ sealed class _ReadDir {
 
 class _Simple extends _ReadDir {
   @override
-  Stream<FileData> readDir(Directory directory) async*{
+  Stream<FileData> readDir(Directory directory) async* {
     await for (final e in directory.list()) {
       final stat = await e.stat();
       yield _getFileData(e.absolute.path, stat);
@@ -107,12 +113,13 @@ class _PileAwait extends _ReadDir {
 }
 
 sealed class _IsolateReadDirData {}
+
 class _FileDataIsolateReadDirData extends _IsolateReadDirData {
   final FileData fileData;
   _FileDataIsolateReadDirData(this.fileData);
 }
-class _EndIsolateReadDirData extends _IsolateReadDirData {}
 
+class _EndIsolateReadDirData extends _IsolateReadDirData {}
 
 class _IsolateReadDir extends _ReadDir {
   late final SendPort _sp;
@@ -127,7 +134,7 @@ class _IsolateReadDir extends _ReadDir {
 
     rp.listen((msg) {
       final data = msg as _IsolateReadDirData;
-      switch(data) {
+      switch (data) {
         case _FileDataIsolateReadDirData(:final fileData):
           response.add(fileData);
         case _EndIsolateReadDirData():
@@ -172,5 +179,4 @@ class _IsolateReadDir extends _ReadDir {
       port.send(_EndIsolateReadDirData());
     });
   }
-
 }

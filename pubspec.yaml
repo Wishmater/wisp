@@ -14,8 +14,7 @@ dependencies:
   dartx: ^1.2.0
   path: ^1.9.1
   path_provider: ^2.1.5
-  flutter_riverpod: 2.0.0-dev.9
-  # flutter_riverpod: ^3.2.1
+  flutter_riverpod: ^3.2.1
   animations: ^2.2.0
   window_manager: ^0.4.3
 
@@ -23,20 +22,11 @@ dependencies:
     git:
       url: https://github.com/ross96D/xdg-mime.dart
 
-  fz_actions:
-    path: ../from_zero_ui/packages/fz_actions/
-  fz_api_handling:
-    path: ../from_zero_ui/packages/fz_api_handling/
-  fz_appbar:
-    path: ../from_zero_ui/packages/fz_appbar/
-  fz_opacity_gradient:
-    path: ../from_zero_ui/packages/fz_opacity_gradient/
-  fz_popup:
-    path: ../from_zero_ui/packages/fz_popup/
-  fz_scrollbar:
-    path: ../from_zero_ui/packages/fz_scrollbar/
-  fz_tooltip:
-    path: ../from_zero_ui/packages/fz_tooltip/
+  from_zero_ui:
+    # path: ../from_zero_ui/
+    git:
+      url: https://github.com/FromZeroDev/from_zero_ui
+      ref: riverpod3
 
 dev_dependencies:
   flutter_test:

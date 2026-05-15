@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fz_actions/fz_actions.dart';
-import 'package:fz_appbar/fz_appbar.dart';
+import 'package:from_zero_ui/packages/fz_actions.dart';
+import 'package:from_zero_ui/packages/fz_appbar.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/ui/files_list.dart';
 import 'package:wisp/ui/path_viewer.dart';
@@ -22,7 +22,7 @@ class ExplorerScaffold extends ConsumerWidget {
               icon: Icon(Icons.keyboard_arrow_up_outlined),
               title: 'Up',
               onTap: (context) {
-                goUp(ref);
+                ref.read(currentDirectory.notifier).goUp();
               },
             ),
           ],
