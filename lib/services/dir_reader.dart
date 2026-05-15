@@ -43,21 +43,49 @@ class PileAwaitDirReader extends DirReader {
 sealed class _IsolateReadDirData {}
 
 class _FileDataIsolateReadDirData extends _IsolateReadDirData {
-  final FileData fileData;
+  final List<FileData> fileData;
   _FileDataIsolateReadDirData(this.fileData);
 }
 
 class _EndIsolateReadDirData extends _IsolateReadDirData {}
 
+class _IsolateStartData {
+  final Directory directory;
+  final DirReader reader;
+  final SendPort port;
+  final int batchSize;
+  _IsolateStartData({
+    required this.directory,
+    required this.reader,
+    required this.port,
+    required this.batchSize,
+  });
+}
+
 @visibleForTesting
 class IsolateDirReader extends DirReader {
+  final DirReader reader;
+  final int batchSize;
+
+  IsolateDirReader(
+    this.reader, {
+    this.batchSize = 100,
+  });
+
   late final SendPort _sp;
 
   @override
   Stream<FileData> readDir(Directory directory) {
     final rp = ReceivePort();
     final completer = Completer<bool>();
-    _sp.send((directory, rp.sendPort));
+    _sp.send(
+      _IsolateStartData(
+        directory: directory,
+        reader: reader,
+        port: rp.sendPort,
+        batchSize: batchSize,
+      ),
+    );
 
     final response = StreamController<FileData>();
 
@@ -65,7 +93,9 @@ class IsolateDirReader extends DirReader {
       final data = msg as _IsolateReadDirData;
       switch (data) {
         case _FileDataIsolateReadDirData(:final fileData):
-          response.add(fileData);
+          for (final data in fileData) {
+            response.add(data);
+          }
         case _EndIsolateReadDirData():
           completer.complete(true);
       }
@@ -98,14 +128,20 @@ class IsolateDirReader extends DirReader {
     sp.send(rpIsolate.sendPort);
 
     rpIsolate.listen((msg) async {
-      final (directory, port) = msg as (Directory, SendPort);
-      await for (final entry in directory.list(followLinks: false)) {
-        final stat = entry.statSync();
-        final path = entry.absolute.path;
-        final data = FileData.fromStat(path, stat);
-        port.send(_FileDataIsolateReadDirData(data));
+      final params = msg as _IsolateStartData;
+      List<FileData> tempList = [];
+      await for (final data in params.reader.readDir(params.directory)) {
+        tempList.add(data);
+        if (tempList.length >= params.batchSize) {
+          final sendList = tempList;
+          tempList = [];
+          params.port.send(_FileDataIsolateReadDirData(sendList));
+        }
       }
-      port.send(_EndIsolateReadDirData());
+      if (tempList.isNotEmpty) {
+        params.port.send(_FileDataIsolateReadDirData(tempList));
+      }
+      params.port.send(_EndIsolateReadDirData());
     });
   }
 }
@@ -123,7 +159,7 @@ class SyncDirReader extends DirReader {
 
 @visibleForTesting
 class ComputeDirReader extends DirReader {
-  DirReader reader;
+  final DirReader reader;
 
   ComputeDirReader(this.reader);
 
