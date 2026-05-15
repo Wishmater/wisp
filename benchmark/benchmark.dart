@@ -62,7 +62,7 @@ void main() {
 
       final allResults = <String, List<Duration>>{};
       final sw = Stopwatch();
-      int fileCount = 0;
+      int expectedCount = 0;
 
       for (var i = 0; i < iterations; i++) {
         for (final entry in readers.entries) {
@@ -74,12 +74,20 @@ void main() {
           final files = await reader.readDir(dir).toList();
           sw.stop();
 
-          if (i == 0) fileCount = files.length;
           allResults.putIfAbsent(name, () => []).add(sw.elapsed);
+
+          if (i == 0 && entry.key == readers.keys.first) {
+            expectedCount = files.length;
+          }
+          if (files.length != expectedCount) {
+            print('CORRECTNESS FAILURE in pass $i — $name returned ${files.length} items, expected $expectedCount');
+            throw Exception('Reader item count mismatch');
+          }
         }
       }
 
-      _printResults(allResults, fileCount, iterations);
+      print('All readers returned $expectedCount items in $iterations passes.\n');
+      _printResults(allResults, expectedCount, iterations);
     },
     timeout: Timeout.none,
   );
