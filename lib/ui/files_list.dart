@@ -37,6 +37,7 @@ class FilesList extends ConsumerWidget {
                 rowHeight: 48,
                 horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
                 verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 delegate: FilesChildDelegate(
                   maxXIndex: columns.length - 1,
                   maxYIndex: data.length - 1,
@@ -51,7 +52,11 @@ class FilesList extends ConsumerWidget {
                   builder: (BuildContext context, ChildVicinity vicinity) {
                     final statType = columns[vicinity.xIndex];
                     final fileData = data[vicinity.yIndex];
-                    return Text(fileData.getStatTypeFormatted(context, statType));
+                    return Container(
+                      padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+                      alignment: Alignment.centerLeft,
+                      child: Text(fileData.getStatTypeFormatted(context, statType)),
+                    );
                   },
                 ),
               );
@@ -85,6 +90,7 @@ class FilesListView extends TwoDimensionalScrollView {
   final int colCount;
   final double rowHeight;
   final List<double> columnSizes;
+  final EdgeInsets padding;
 
   const FilesListView({
     required super.delegate,
@@ -92,6 +98,7 @@ class FilesListView extends TwoDimensionalScrollView {
     required this.colCount,
     required this.rowHeight,
     required this.columnSizes,
+    this.padding = EdgeInsets.zero,
     super.verticalDetails,
     super.horizontalDetails,
     super.key,
@@ -112,6 +119,7 @@ class FilesListView extends TwoDimensionalScrollView {
       colCount: colCount,
       rowHeight: rowHeight,
       columnSizes: columnSizes,
+      padding: padding,
     );
   }
 }
@@ -121,6 +129,7 @@ class FilesListViewport extends TwoDimensionalViewport {
   final int colCount;
   final double rowHeight;
   final List<double> columnSizes;
+  final EdgeInsets padding;
 
   const FilesListViewport({
     required super.verticalOffset,
@@ -131,6 +140,7 @@ class FilesListViewport extends TwoDimensionalViewport {
     required this.colCount,
     required this.rowHeight,
     required this.columnSizes,
+    this.padding = EdgeInsets.zero,
     super.key,
   }) : super(
          verticalAxisDirection: .down,
@@ -151,15 +161,27 @@ class FilesListViewport extends TwoDimensionalViewport {
       colCount: colCount,
       rowHeight: rowHeight,
       columnSizes: columnSizes,
+      padding: padding,
     );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderFilesListViewport renderObject) {
+    renderObject
+      ..rowCount = rowCount
+      ..colCount = colCount
+      ..rowHeight = rowHeight
+      ..columnSizes = columnSizes
+      ..padding = padding;
   }
 }
 
 class RenderFilesListViewport extends RenderTwoDimensionalViewport {
-  final int rowCount;
-  final int colCount;
-  final double rowHeight;
-  final List<double> columnSizes;
+  int rowCount;
+  int colCount;
+  double rowHeight;
+  List<double> columnSizes;
+  EdgeInsets padding;
 
   RenderFilesListViewport({
     required super.horizontalOffset,
@@ -173,6 +195,7 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
     required this.colCount,
     required this.rowHeight,
     required this.columnSizes,
+    this.padding = EdgeInsets.zero,
   });
 
   @override
@@ -185,7 +208,7 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
     // Compute visible column range
-    final renderStartX = horizontalOffset.pixels - cacheExtent;
+    final renderStartX = (horizontalOffset.pixels - cacheExtent - padding.left).coerceAtLeast(0);
     final renderEndX = horizontalOffset.pixels + viewportDimension.width + cacheExtent;
     final firstFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderStartX);
     final firstCol = firstFullyVisibleCol == -1 ? colCount - 1 : (firstFullyVisibleCol - 1).coerceAtLeast(0);
@@ -193,7 +216,7 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
     final lastCol = lastFullyVisibleCol == -1 ? colCount - 1 : firstFullyVisibleCol;
 
     // Compute visible row range
-    final renderStartY = verticalOffset.pixels - cacheExtent;
+    final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top).coerceAtLeast(0);
     final renderEndY = verticalOffset.pixels + viewportDimension.height + cacheExtent;
     final int firstRow = (renderStartY / cellHeight).floor().clamp(0, rowCount - 1);
     final int lastRow = (renderEndY / cellHeight).ceil().clamp(0, rowCount - 1);
@@ -218,8 +241,8 @@ class RenderFilesListViewport extends RenderTwoDimensionalViewport {
         final parentData = child.parentData! as TwoDimensionalViewportParentData;
         child.layout(BoxConstraints.tight(Size(cellWidth, cellHeight)));
         parentData.layoutOffset = Offset(
-          columnOffsets[col] - horizontalOffset.pixels,
-          row * cellHeight - verticalOffset.pixels,
+          padding.left + columnOffsets[col] - horizontalOffset.pixels,
+          padding.top + row * cellHeight - verticalOffset.pixels,
         );
       }
     }
