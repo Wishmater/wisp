@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:wisp/models/file_data.dart';
 
 final dirReader = _PileAwaitDirReader();
@@ -106,5 +107,33 @@ class _IsolateDirReader extends DirReader {
       }
       port.send(_EndIsolateReadDirData());
     });
+  }
+}
+
+// ignore: unused_element
+class _SyncDirReader extends DirReader {
+  @override
+  Stream<FileData> readDir(Directory directory) async* {
+    for (final e in directory.listSync()) {
+      final stat = e.statSync();
+      yield FileData.fromStat(e.absolute.path, stat);
+    }
+  }
+}
+
+// ignore: unused_element
+class _ComputeDirReader extends DirReader {
+  DirReader reader;
+
+  _ComputeDirReader(this.reader);
+
+  @override
+  Stream<FileData> readDir(Directory directory) async* {
+    final result = await compute((directory) {
+      return reader.readDir(directory).toList();
+    }, directory);
+    for (final e in result) {
+      yield e;
+    }
   }
 }
