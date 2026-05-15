@@ -17,7 +17,7 @@ sealed class DirReader {
 class SimpleDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
-    await for (final e in directory.list()) {
+    await for (final e in directory.list(followLinks: false)) {
       final stat = await e.stat();
       yield FileData.fromStat(e.absolute.path, stat);
     }
@@ -114,7 +114,7 @@ class IsolateDirReader extends DirReader {
 class SyncDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
-    for (final e in directory.listSync()) {
+    for (final e in directory.listSync(followLinks: false)) {
       final stat = e.statSync();
       yield FileData.fromStat(e.absolute.path, stat);
     }
