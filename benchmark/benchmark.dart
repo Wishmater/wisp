@@ -43,6 +43,10 @@ void main() {
         'Isolate(PileAwait)': IsolateDirReader(PileAwaitDirReader()),
         'Compute(Sync)': ComputeDirReader(SyncDirReader()),
         'Compute(PileAwait)': ComputeDirReader(PileAwaitDirReader()),
+        'HddAware(Best)': HddAwareDirReader(
+          ssdReader: IsolateDirReader(SyncDirReader()),
+          hddReader: IsolateDirReader(PileAwaitDirReader()),
+        ),
       };
 
       print('');

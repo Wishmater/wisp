@@ -4,8 +4,12 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:wisp/models/file_data.dart';
+import 'package:wisp/services/disk_type.dart';
 
-final dirReader = PileAwaitDirReader();
+final dirReader = HddAwareDirReader(
+  ssdReader: IsolateDirReader(SyncDirReader()),
+  hddReader: IsolateDirReader(PileAwaitDirReader()),
+);
 
 sealed class DirReader {
   Future<void> init() async {}
@@ -171,6 +175,35 @@ class ComputeDirReader extends DirReader {
     }, directory);
     for (final e in result) {
       yield e;
+    }
+  }
+}
+
+@visibleForTesting
+class HddAwareDirReader extends DirReader {
+  final DirReader ssdReader;
+  final DirReader hddReader;
+
+  HddAwareDirReader({
+    required this.ssdReader,
+    required this.hddReader,
+  });
+
+  @override
+  Future<void> init() {
+    return Future.wait([
+      diskType.init(),
+      ssdReader.init(),
+      hddReader.init(),
+    ]);
+  }
+
+  @override
+  Stream<FileData> readDir(Directory directory) {
+    if (diskType.isRotational(directory.absolute.path)) {
+      return hddReader.readDir(directory);
+    } else {
+      return ssdReader.readDir(directory);
     }
   }
 }
