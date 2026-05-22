@@ -23,8 +23,41 @@ class SimpleDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
     await for (final e in directory.list(followLinks: false)) {
+      final result = FileData(path: e.absolute.path);
+      yield result;
       final stat = await e.stat();
-      yield FileData.fromStat(e.absolute.path, stat);
+      result.statData = FileStatData.fromStat(stat);
+      yield result;
+      result.typeData = switch (stat.type) {
+        // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
+        .directory => FileTypeData(type: .directory),
+        // TODO: 2 we should probably handle most cases (links, etc.)
+        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
+      };
+      yield result;
+      // TODO: 2 load special data
+    }
+  }
+}
+
+@visibleForTesting
+class SyncDirReader extends DirReader {
+  @override
+  Stream<FileData> readDir(Directory directory) async* {
+    for (final e in directory.listSync(followLinks: false)) {
+      final result = FileData(path: e.absolute.path);
+      yield result;
+      final stat = e.statSync();
+      result.statData = FileStatData.fromStat(stat);
+      yield result;
+      result.typeData = switch (stat.type) {
+        // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
+        .directory => FileTypeData(type: .directory),
+        // TODO: 2 we should probably handle most cases (links, etc.)
+        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
+      };
+      yield result;
+      // TODO: 2 load special data
     }
   }
 }
@@ -33,14 +66,24 @@ class SimpleDirReader extends DirReader {
 class PileAwaitDirReader extends DirReader {
   @override
   Stream<FileData> readDir(Directory directory) async* {
-    final list = <(String, Future<FileStat>)>[];
+    final list = <(FileData, Future<FileStat>)>[];
     await for (final e in directory.list(followLinks: false)) {
-      list.add((e.absolute.path, e.stat()));
+      list.add((FileData(path: e.absolute.path), e.stat()));
     }
     for (final f in list) {
+      final result = f.$1;
       final stat = await f.$2;
-      final path = f.$1;
-      yield FileData.fromStat(path, stat);
+      result.statData = FileStatData.fromStat(stat);
+      yield result;
+      result.typeData = switch (stat.type) {
+        // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
+        .directory => FileTypeData(type: .directory),
+        // TODO: 2 we should probably handle most cases (links, etc.)
+        // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
+        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
+      };
+      yield result;
+      // TODO: 2 load special data
     }
   }
 }
@@ -150,17 +193,6 @@ class IsolateDirReader extends DirReader {
       }
       params.port.send(_EndIsolateReadDirData());
     });
-  }
-}
-
-@visibleForTesting
-class SyncDirReader extends DirReader {
-  @override
-  Stream<FileData> readDir(Directory directory) async* {
-    for (final e in directory.listSync(followLinks: false)) {
-      final stat = e.statSync();
-      yield FileData.fromStat(e.absolute.path, stat);
-    }
   }
 }
 

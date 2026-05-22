@@ -2,19 +2,18 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
-import 'package:wisp/services/xdg_mime.dart';
 
 class FileData {
   String path;
-  int size;
-  DateTime modified;
-  String? mimeType;
+  FileStatData? statData;
+  FileTypeData? typeData;
+  FileSpecialData? specialData;
 
   FileData({
     required this.path,
-    required this.size,
-    required this.modified,
-    required this.mimeType,
+    this.statData,
+    this.typeData,
+    this.specialData,
   });
 
   @override
@@ -27,67 +26,143 @@ class FileData {
 
   String get filename => p.basename(path);
   String get extension => p.extension(path);
-
-  factory FileData.fromStat(String path, FileStat stat) {
-    final mimeType = mimedb.getMimeType(path);
-    return switch (stat.type) {
-      FileSystemEntityType.directory => DirectoryData(
-        path: path,
-        size: stat.size,
-        modified: stat.modified,
-        mimeType: mimeType,
-      ),
-      _ => FileData(
-        path: path,
-        size: stat.size,
-        modified: stat.modified,
-        mimeType: mimeType,
-      ),
-      // TODO: 2 we should probably handle all cases
-    };
-  }
-
-  dynamic getStatType(FileStatType type) {
-    return switch (type) {
-      FileStatType.path => path,
-      FileStatType.filename => filename,
-      FileStatType.size => size,
-      FileStatType.modified => modified,
-    };
-  }
-
-  String getStatTypeFormatted(BuildContext context, FileStatType type) {
-    return switch (type) {
-      FileStatType.path => path,
-      FileStatType.filename => filename,
-      FileStatType.size => '${size}B', // TODO: 1 format size properly
-      FileStatType.modified => modified.toString(), // TODO: 1 format datetime properly
-    };
-  }
 }
 
-class DirectoryData extends FileData {
-  DirectoryData({
-    required super.path,
-    required super.size,
-    required super.modified,
-    required super.mimeType,
+class FileStatData {
+  int size;
+  DateTime modified;
+  DateTime created;
+  DateTime accessed;
+
+  FileStatData({
+    required this.size,
+    required this.modified,
+    required this.created,
+    required this.accessed,
   });
+
+  factory FileStatData.fromStat(FileStat stat) {
+    return FileStatData(
+      size: stat.size,
+      modified: stat.modified,
+      created: stat.changed, // TODO: 1 wtf, there is no created ??
+      accessed: stat.accessed,
+    );
+  }
 }
 
-enum FileStatType {
-  path,
-  filename,
-  size,
-  modified
+class FileTypeData {
+  FileType type;
+  String? mimeType;
+
+  FileTypeData({
+    required this.type,
+    this.mimeType,
+  });
+
+  factory FileTypeData.fromMimeType(String? mimeType) {
+    return FileTypeData(
+      mimeType: mimeType,
+      type: switch (mimeType?.split('/').firstOrNull) {
+        'directory' => FileType.directory,
+        'video' => FileType.video,
+        'audio' => FileType.audio,
+        'image' => FileType.image,
+        'document' => FileType.document,
+        _ => FileType.other,
+      },
+    );
+  }
+}
+
+enum FileType implements Comparable<FileType> {
+  directory,
+  video,
+  audio,
+  image,
+  document,
+  other
   ;
 
   String getUiName(BuildContext context) {
     return switch (this) {
-      FileStatType.path => 'Path',
-      FileStatType.filename => 'Name',
-      FileStatType.size => 'Size',
-      FileStatType.modified => 'Modified',
+      FileType.directory => 'Directory', // "Folder"??
+      FileType.video => 'Video',
+      FileType.audio => 'Audio',
+      FileType.image => 'Image',
+      FileType.document => 'Document',
+      FileType.other => 'Other',
     };
   }
+
+  @override
+  int compareTo(FileType other) {
+    return index.compareTo(other.index);
+  }
+}
+
+sealed class FileSpecialData {}
+
+class FileDirectoryData extends FileSpecialData {
+  int itemCount;
+
+  FileDirectoryData({
+    required this.itemCount,
+  });
+}
+
+class FileVideoData extends FileSpecialData {
+  int width;
+  int height;
+  double frameRate;
+  Duration duration;
+
+  FileVideoData({
+    required this.width,
+    required this.height,
+    required this.frameRate,
+    required this.duration,
+  });
+}
+
+class FileAudioData extends FileSpecialData {
+  int itemCount;
+  double bitRate;
+  Duration duration;
+  String track;
+  String artist;
+  String genre;
+  String album;
+  int releaseYear;
+
+  FileAudioData({
+    required this.itemCount,
+    required this.bitRate,
+    required this.duration,
+    required this.track,
+    required this.artist,
+    required this.genre,
+    required this.album,
+    required this.releaseYear,
+  });
+}
+
+class FileImageData extends FileSpecialData {
+  int width;
+  int height;
+
+  FileImageData({
+    required this.width,
+    required this.height,
+  });
+}
+
+class WrongFileSpecialDataException implements Exception {
+  final FileType fileType;
+  final Type dataType;
+
+  WrongFileSpecialDataException(this.fileType, this.dataType);
+
+  @override
+  String toString() => 'Wrong FileSpecialData: found $dataType for file type $fileType';
 }
