@@ -90,15 +90,25 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
           invalidateCols.add(col + _reservedBeforeX);
         }
       }
-      // invalidate reserved rows after the last one that will be reused because row count increased
-      final lastRelevantReservedAfterY = min(widget.rows.length, oldWidget.rows.length + _reservedAfterY);
-      for (int i = oldWidget.rows.length; i < lastRelevantReservedAfterY; i++) {
-        invalidateRows.add(i + _reservedBeforeY);
+      // invalidate reserved rows after the last one that will be reused because row count changed
+      if (widget.rows.length > oldWidget.rows.length) {
+        for (int i = 0; i < _reservedAfterY; i++) {
+          invalidateRows.add(oldWidget.rows.length + i);
+        }
+      } else {
+        for (int i = 0; i < _reservedAfterY; i++) {
+          invalidateRows.add(widget.rows.length + i);
+        }
       }
-      // invalidate reserved columns after the last one that will be reused because col count increased
-      final lastRelevantReservedAfterX = min(widget.columns.length, oldWidget.columns.length + _reservedAfterX);
-      for (int i = oldWidget.columns.length; i < lastRelevantReservedAfterX; i++) {
-        invalidateCols.add(i + _reservedBeforeX);
+      // invalidate reserved columns after the last one that will be reused because col count changed
+      if (widget.columns.length > oldWidget.columns.length) {
+        for (int i = 0; i < _reservedAfterX; i++) {
+          invalidateCols.add(oldWidget.columns.length + i);
+        }
+      } else {
+        for (int i = 0; i < _reservedAfterX; i++) {
+          invalidateCols.add(widget.columns.length + i);
+        }
       }
       if (invalidateRows.isNotEmpty || invalidateCols.isNotEmpty) {
         print('INVALIDATE rows=$invalidateRows ;; cols=$invalidateCols');
@@ -346,10 +356,11 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
   }
 
   late int firstRow, lastRow, firstCol, lastCol;
+  late List<RenderBox> _hitTestOrderedChildren;
 
   @override
   void layoutChildSequence() {
-    print('layoutChildSequence()');
+    _hitTestOrderedChildren = [];
     final padding = this.padding + EdgeInsets.only(top: headerHeight);
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
     final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal;
@@ -387,6 +398,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
         TableViewHeaderChildVicinity(xIndex: col, yCount: rowCount),
       );
       if (header != null) {
+        _hitTestOrderedChildren.add(header);
         final cellWidth = columnSizes[col];
         final headerParentData = header.parentData! as TwoDimensionalViewportParentData;
         header.layout(BoxConstraints.tight(Size(cellWidth, headerHeight)));
@@ -397,14 +409,15 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       }
     }
     // Layout header background, background must be layed out after actual cells, because order affects gestures
-    final rowBackground = buildOrObtainChildFor(
+    final headerBackground = buildOrObtainChildFor(
       TableViewHeaderBackgroundVicinity(yCount: rowCount),
     );
-    if (rowBackground != null) {
-      final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
+    if (headerBackground != null) {
+      _hitTestOrderedChildren.add(headerBackground);
+      final headerBackgroundParentData = headerBackground.parentData! as TwoDimensionalViewportParentData;
       // TODO: 3 would it be better if we limit this to the viewport with instead of spanning over edges
-      rowBackground.layout(BoxConstraints.tight(Size(maxWidth, headerHeight)));
-      rowBackgroundParentData.layoutOffset = Offset(
+      headerBackground.layout(BoxConstraints.tight(Size(maxWidth, headerHeight)));
+      headerBackgroundParentData.layoutOffset = Offset(
         0,
         this.padding.top,
       );
@@ -417,6 +430,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
           TableViewChildVicinity(xIndex: col, yIndex: row),
         );
         if (child != null) {
+          _hitTestOrderedChildren.add(child);
           final cellWidth = columnSizes[col];
           final parentData = child.parentData! as TwoDimensionalViewportParentData;
           child.layout(BoxConstraints.tight(Size(cellWidth, rowHeight)));
@@ -431,6 +445,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
         TableViewRowBackgroundVicinity(yIndex: row),
       );
       if (rowBackground != null) {
+        _hitTestOrderedChildren.add(rowBackground);
         final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
         // TODO: 3 it probably looks better if we limit this to the viewport with instead of spanning over edges
         rowBackground.layout(BoxConstraints.tight(Size(maxWidth, rowHeight)));
@@ -453,6 +468,30 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       //   );
       // }
     }
+  }
+
+  // copied from RenderTwoDimensionalViewport.hitTestChildren()
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    for (final RenderBox child in _hitTestOrderedChildren) {
+      final TwoDimensionalViewportParentData childParentData = parentDataOf(child);
+      if (!childParentData.isVisible) {
+        // Can't hit a child that is not visible.
+        continue;
+      }
+      final bool isHit = result.addWithPaintOffset(
+        offset: childParentData.paintOffset,
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset transformed) {
+          assert(transformed == position - childParentData.paintOffset!);
+          return child.hitTest(result, position: transformed);
+        },
+      );
+      if (isHit) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 

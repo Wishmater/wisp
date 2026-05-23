@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,7 +125,7 @@ final directoryList = ApiProviderFamily<Iterable<FileData>, String>(
             apiState.selfProgressNotifier.value = update.totalProcessedCount.toDouble();
         }
         print(
-          'Received message ${iteration++} after ${stopwatch.elapsed}:'
+          'Provider received message ${iteration++} after ${stopwatch.elapsed}:'
           ' total=${apiState.selfTotalNotifier.value}'
           ' done=${apiState.selfProgressNotifier.value}',
         );

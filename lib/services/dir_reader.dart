@@ -101,12 +101,12 @@ class SyncDirReader extends DirReader {
   Stream<DirReaderMessage> readDir(Directory directory) async* {
     for (final e in directory.listSync(followLinks: false)) {
       final path = e.absolute.path;
-      await Future.delayed(Duration(milliseconds: 10));
+      // await Future.delayed(Duration(milliseconds: 10));
       yield SingleFileData(FileData(path: path));
       final stat = e.statSync();
-      await Future.delayed(Duration(milliseconds: 10));
+      // await Future.delayed(Duration(milliseconds: 10));
       yield SingleStatData(path, FileStatData.fromStat(stat));
-      await Future.delayed(Duration(milliseconds: 10));
+      // await Future.delayed(Duration(milliseconds: 10));
       yield SingleTypeData(path, switch (stat.type) {
         // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
         .directory => FileTypeData(type: .directory),
@@ -114,7 +114,7 @@ class SyncDirReader extends DirReader {
         // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
         _ => FileTypeData.fromMimeType(mimedb.getMimeType(path)),
       });
-      await Future.delayed(Duration(milliseconds: 10));
+      // await Future.delayed(Duration(milliseconds: 10));
       // TODO: 2 load special data, according to type
       yield SingleSpecialData(path, FileNoSpecialData());
     }
@@ -128,16 +128,16 @@ class PileAwaitDirReader extends DirReader {
     final response = StreamController<DirReaderMessage>();
     final list = directory.list(followLinks: false);
     final futures = <Future<void>>[];
-    final random = Random();
+    // final random = Random();
     list.listen(
       (e) {
         final path = e.absolute.path;
         response.add(SingleFileData(FileData(path: path)));
         futures.add(() async {
           final stat = await e.stat();
-          await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
+          // await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
           response.add(SingleStatData(path, FileStatData.fromStat(stat)));
-          await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
+          // await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
           response.add(
             SingleTypeData(path, switch (stat.type) {
               // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
@@ -148,7 +148,7 @@ class PileAwaitDirReader extends DirReader {
             }),
           );
           // TODO: 2 load special data, according to type
-          await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
+          // await Future.delayed(Duration(milliseconds: random.nextInt(10000)));
           response.add(SingleSpecialData(path, FileNoSpecialData()));
         }());
       },

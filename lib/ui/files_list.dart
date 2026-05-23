@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
+import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/widgets/table_view.dart';
@@ -28,7 +29,7 @@ class FilesList extends ConsumerWidget {
             controller: horizontalController,
             blockScrollNotifications: false,
             child: ScrollOpacityGradient(
-              direction: OpacityGradient.vertical,
+              direction: OpacityGradient.bottom,
               scrollController: verticalController,
               child: ApiProviderBuilder(
                 provider: sortedDirectoryList.call(currentDirectoryValue),
@@ -54,7 +55,6 @@ class FilesList extends ConsumerWidget {
                   );
                 },
                 dataBuilder: (context, data) {
-                  print('BUILD: ${data.map((e) => e.filename)}');
                   return TableView(
                     rows: data.toList(),
                     columns: columns,
@@ -65,51 +65,25 @@ class FilesList extends ConsumerWidget {
                     verticalDetails: ScrollableDetails.vertical(controller: verticalController),
                     padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
                     builder: (context, fileData, fileField, _, _) {
-                      final value = fileData.getFormatted(context, fileField);
-                      return InkWell(
-                        onTap: () {
-                          print('XDD');
-                        },
-                        child: Container(
-                          padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                          alignment: Alignment.centerLeft,
-                          child: Text(value ?? ''), // TODO: 2 show loading if value is null?
-                        ),
-                      );
+                      return FileCell(fileData: fileData, fileField: fileField);
                     },
                     headerBuilder: (context, fileField, _) {
-                      final value = fileField.getUiName(context);
+                      return HeaderCell(fileField: fileField);
+                    },
+                    rowBackgroundBuilder: (context, fileData, _) {
                       return InkWell(
-                        onTap: () {
-                          ref.read(currentSort.notifier).setField(fileField);
+                        onDoubleTap: () {
+                          if (fileData.typeData?.type == .directory) {
+                            ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
+                          } else {
+                            openFile(fileData);
+                          }
                         },
-                        child: Container(
-                          padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                          alignment: Alignment.centerLeft,
-                          child: Text(value),
-                        ),
                       );
                     },
                     headerBackgroundBuilder: (context) {
-                      return InkWell(
-                        onTap: () {
-                          print('WTF');
-                        },
-                        child: Material(color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.75)),
-                      );
-                    },
-                    rowBackgroundBuilder: (context, fileData, _) {
                       return Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          onDoubleTap: () {
-                            if (fileData.typeData?.type == .directory) {
-                              ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
-                            } else {
-                              openFile(fileData);
-                            }
-                          },
-                        ),
+                        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.75),
                       );
                     },
                   );
@@ -136,6 +110,80 @@ class FilesList extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class FileCell extends StatelessWidget {
+  final FileData fileData;
+  final FileDataField fileField;
+
+  const FileCell({
+    required this.fileData,
+    required this.fileField,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final value = fileData.getFormatted(context, fileField);
+    return IgnorePointer(
+      child: Container(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          value ?? '',
+          maxLines: 1,
+        ), // TODO: 2 show loading if value is null?
+      ),
+    );
+  }
+}
+
+class HeaderCell extends ConsumerWidget {
+  final FileDataField fileField;
+
+  const HeaderCell({
+    required this.fileField,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final value = fileField.getUiName(context);
+    return InkWell(
+      onTap: () {
+        ref.read(currentSort.notifier).setField(fileField);
+      },
+      child: Padding(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: IntrinsicWidth(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                  ),
+                ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentSortValue = ref.watch(currentSort);
+                    if (currentSortValue.$1 != fileField) {
+                      return SizedBox.shrink();
+                    }
+                    return Icon(
+                      currentSortValue.$2 ? Icons.arrow_drop_down : Icons.arrow_drop_up,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
