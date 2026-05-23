@@ -235,6 +235,7 @@ extension FileDataFieldUtils on FileData {
         .directory => switch (specialData) {
           FileDirectoryData data => '${data.itemCount} items',
           null => null,
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => statData == null ? null : '${statData!.size} B', // TODO: 1 format size properly
@@ -248,11 +249,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => data.duration.toString(), // TODO: 1 format duration properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.duration.toString(), // TODO: 1 format duration properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -262,11 +265,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => data.width.toString(),
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .image => switch (specialData) {
           null => null,
           FileImageData data => data.width.toString(),
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -276,11 +281,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => data.height.toString(),
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .image => switch (specialData) {
           null => null,
           FileImageData data => data.height.toString(),
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -290,11 +297,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => '${data.width} x ${data.height}',
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .image => switch (specialData) {
           null => null,
           FileImageData data => '${data.width} x ${data.height}',
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -304,11 +313,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => (data.width / data.height).toString(), // TODO: 1 format aspect ratio properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .image => switch (specialData) {
           null => null,
           FileImageData data => (data.width / data.height).toString(), // TODO: 1 format aspect ratio properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -318,11 +329,13 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => data.width >= data.height ? 'Landscape' : 'Portrait',
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         .image => switch (specialData) {
           null => null,
           FileImageData data => data.width >= data.height ? 'Landscape' : 'Portrait',
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -332,6 +345,7 @@ extension FileDataFieldUtils on FileData {
         .video => switch (specialData) {
           null => null,
           FileVideoData data => data.frameRate.toString(), // TODO: 1 format frameRate properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -341,6 +355,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.bitRate.toString(), // TODO: 1 format properly
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -350,6 +365,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.track,
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -359,6 +375,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.artist,
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -368,6 +385,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.genre,
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -377,6 +395,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.album,
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',
@@ -386,6 +405,7 @@ extension FileDataFieldUtils on FileData {
         .audio => switch (specialData) {
           null => null,
           FileAudioData data => data.releaseYear.toString(),
+          _ => '',
           _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
         _ => '',

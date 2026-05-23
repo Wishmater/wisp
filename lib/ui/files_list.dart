@@ -17,66 +17,109 @@ class FilesList extends ConsumerWidget {
     final currentDirectoryValue = ref.watch(currentDirectory);
     final verticalController = ScrollController();
     final horizontalController = ScrollController();
+    final notifier = ref.watch(directoryList.call(currentDirectoryValue).notifier);
     // TODO: 2 implement double-scrollbar support in ScrollbarFromZero
-    return ScrollbarFromZero(
-      controller: verticalController,
-      applyOpacityGradientToChildren: false,
-      child: ScrollbarFromZero(
-        controller: horizontalController,
-        blockScrollNotifications: false,
-        child: ScrollOpacityGradient(
-          direction: OpacityGradient.vertical,
-          scrollController: verticalController,
-          child: ApiProviderBuilder(
-            provider: sortedDirectoryList.call(currentDirectoryValue),
-            dataBuilder: (context, data) {
-              return TableView(
-                rows: data,
-                columns: columns,
-                columnSizes: columnSizes,
-                rowHeight: 48,
-                headerHeight: 48,
-                horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
-                verticalDetails: ScrollableDetails.vertical(controller: verticalController),
-                padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
-                builder: (context, fileData, statType, _, _) {
-                  final value = fileData.getFormatted(context, statType);
-                  return Container(
-                    padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                    alignment: Alignment.centerLeft,
-                    child: Text(value ?? ''), // TODO: 2 show loading if value is null?
+    return Stack(
+      children: [
+        ScrollbarFromZero(
+          controller: verticalController,
+          applyOpacityGradientToChildren: false,
+          child: ScrollbarFromZero(
+            controller: horizontalController,
+            blockScrollNotifications: false,
+            child: ScrollOpacityGradient(
+              direction: OpacityGradient.vertical,
+              scrollController: verticalController,
+              child: ApiProviderBuilder(
+                provider: directoryList.call(currentDirectoryValue),
+                transitionDuration: Duration.zero,
+                addLoadingStateAsValueKeys: false,
+                loadingBuilder: (context, progress) {
+                  if (progress == null) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: LinearProgressIndicator(),
+                    );
+                  }
+                  return ValueListenableBuilder(
+                    valueListenable: progress,
+                    builder: (context, value, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: LinearProgressIndicator(
+                          value: value,
+                        ),
+                      );
+                    },
                   );
                 },
-                headerBuilder: (context, statType, _) {
-                  final value = statType.getUiName(context);
-                  return Container(
-                    padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                    alignment: Alignment.centerLeft,
-                    child: Text(value),
+                dataBuilder: (context, data) {
+                  print('BUILD ${data.length}');
+                  return TableView(
+                    rows: data.toList(),
+                    columns: columns,
+                    columnSizes: columnSizes,
+                    rowHeight: 48,
+                    headerHeight: 48,
+                    horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
+                    verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+                    padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
+                    builder: (context, fileData, statType, _, _) {
+                      final value = fileData.getFormatted(context, statType);
+                      return Container(
+                        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+                        alignment: Alignment.centerLeft,
+                        child: Text(value ?? ''), // TODO: 2 show loading if value is null?
+                      );
+                    },
+                    headerBuilder: (context, statType, _) {
+                      final value = statType.getUiName(context);
+                      return Container(
+                        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+                        alignment: Alignment.centerLeft,
+                        child: Text(value),
+                      );
+                    },
+                    headerBackgroundBuilder: (context) {
+                      return ColoredBox(color: Theme.of(context).canvasColor.withValues(alpha: 0.75));
+                    },
+                    rowBackgroundBuilder: (context, fileData, _) {
+                      return Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onDoubleTap: () {
+                            if (fileData.typeData?.type == .directory) {
+                              ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
+                            } else {
+                              openFile(fileData);
+                            }
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
-                headerBackgroundBuilder: (context) {
-                  return ColoredBox(color: Theme.of(context).canvasColor.withValues(alpha: 0.75));
-                },
-                rowBackgroundBuilder: (context, fileData, _) {
-                  return Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
-                      onDoubleTap: () {
-                        if (fileData.typeData?.type == .directory) {
-                          ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
-                        } else {
-                          openFile(fileData);
-                        }
-                      },
-                    ),
-                  );
-                },
-              );
-            },
+              ),
+            ),
           ),
         ),
-      ),
+        ValueListenableBuilder(
+          valueListenable: notifier.wholePercentageNotifier,
+          builder: (context, progress, _) {
+            if (progress == 1) {
+              return SizedBox.shrink();
+            }
+            return Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: LinearProgressIndicator(
+                value: progress,
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

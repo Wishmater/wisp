@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:wisp/models/file_data.dart';
@@ -8,34 +9,88 @@ import 'package:wisp/services/disk_type.dart';
 import 'package:wisp/services/xdg_mime.dart';
 
 final dirReader = HddAwareDirReader(
-  ssdReader: IsolateDirReader(SyncDirReader()),
+  // ssdReader: IsolateDirReader(SyncDirReader()),
+  ssdReader: IsolateDirReader(PileAwaitDirReader()),
   hddReader: IsolateDirReader(PileAwaitDirReader()),
 );
 
 sealed class DirReader {
   Future<void> init() async {}
 
-  Stream<FileData> readDir(Directory directory);
+  Stream<DirReaderMessage> readDir(Directory directory);
+}
+
+sealed class DirReaderMessage {}
+
+class SingleFileData extends DirReaderMessage {
+  final FileData data;
+  SingleFileData(this.data);
+}
+
+class FilesListDone extends DirReaderMessage {}
+
+class SingleStatData extends DirReaderMessage {
+  final String path;
+  final FileStatData data;
+  SingleStatData(this.path, this.data);
+}
+
+class SingleTypeData extends DirReaderMessage {
+  final String path;
+  final FileTypeData data;
+  SingleTypeData(this.path, this.data);
+}
+
+class SingleSpecialData extends DirReaderMessage {
+  final String path;
+  final FileSpecialData data;
+  SingleSpecialData(this.path, this.data);
+}
+
+class FullUpdate extends DirReaderMessage {
+  final List<FileData> newFileData;
+  final List<SingleStatData> statDataUpdates;
+  final List<SingleTypeData> typeDataUpdates;
+  final List<SingleSpecialData> specialDataUpdates;
+  final int? fileCount;
+  final int fileDataProcessedCount;
+  final int statDataProcessedCount;
+  final int typeDataProcessedCount;
+  final int specialDataProcessedCount;
+  FullUpdate({
+    required this.newFileData,
+    required this.statDataUpdates,
+    required this.typeDataUpdates,
+    required this.specialDataUpdates,
+    required this.fileCount,
+    required this.fileDataProcessedCount,
+    required this.statDataProcessedCount,
+    required this.typeDataProcessedCount,
+    required this.specialDataProcessedCount,
+  });
+  int? get totalCount => fileCount == null ? null : fileCount! * 4;
+  int get totalProcessedCount =>
+      fileDataProcessedCount + statDataProcessedCount + typeDataProcessedCount + specialDataProcessedCount;
 }
 
 @visibleForTesting
 class SimpleDirReader extends DirReader {
   @override
-  Stream<FileData> readDir(Directory directory) async* {
+  Stream<DirReaderMessage> readDir(Directory directory) async* {
     await for (final e in directory.list(followLinks: false)) {
-      final result = FileData(path: e.absolute.path);
-      yield result;
+      final path = e.absolute.path;
+      yield SingleFileData(FileData(path: path));
       final stat = await e.stat();
-      result.statData = FileStatData.fromStat(stat);
-      yield result;
-      result.typeData = switch (stat.type) {
+      yield SingleStatData(path, FileStatData.fromStat(stat));
+      yield SingleTypeData(path, switch (stat.type) {
         // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
         .directory => FileTypeData(type: .directory),
         // TODO: 2 we should probably handle most cases (links, etc.)
-        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
-      };
-      yield result;
-      // TODO: 2 load special data
+        // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
+        _ => FileTypeData.fromMimeType(mimedb.getMimeType(path)),
+      });
+      // TODO: 2 load special data, according to type
+      yield SingleSpecialData(path, FileNoSpecialData());
     }
   }
 }
@@ -43,21 +98,25 @@ class SimpleDirReader extends DirReader {
 @visibleForTesting
 class SyncDirReader extends DirReader {
   @override
-  Stream<FileData> readDir(Directory directory) async* {
+  Stream<DirReaderMessage> readDir(Directory directory) async* {
     for (final e in directory.listSync(followLinks: false)) {
-      final result = FileData(path: e.absolute.path);
-      yield result;
+      final path = e.absolute.path;
+      await Future.delayed(Duration(milliseconds: 10));
+      yield SingleFileData(FileData(path: path));
       final stat = e.statSync();
-      result.statData = FileStatData.fromStat(stat);
-      yield result;
-      result.typeData = switch (stat.type) {
+      await Future.delayed(Duration(milliseconds: 10));
+      yield SingleStatData(path, FileStatData.fromStat(stat));
+      await Future.delayed(Duration(milliseconds: 10));
+      yield SingleTypeData(path, switch (stat.type) {
         // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
         .directory => FileTypeData(type: .directory),
         // TODO: 2 we should probably handle most cases (links, etc.)
-        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
-      };
-      yield result;
-      // TODO: 2 load special data
+        // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
+        _ => FileTypeData.fromMimeType(mimedb.getMimeType(path)),
+      });
+      await Future.delayed(Duration(milliseconds: 10));
+      // TODO: 2 load special data, according to type
+      yield SingleSpecialData(path, FileNoSpecialData());
     }
   }
 }
@@ -65,37 +124,52 @@ class SyncDirReader extends DirReader {
 @visibleForTesting
 class PileAwaitDirReader extends DirReader {
   @override
-  Stream<FileData> readDir(Directory directory) async* {
-    final list = <(FileData, Future<FileStat>)>[];
-    await for (final e in directory.list(followLinks: false)) {
-      list.add((FileData(path: e.absolute.path), e.stat()));
-    }
-    for (final f in list) {
-      final result = f.$1;
-      final stat = await f.$2;
-      result.statData = FileStatData.fromStat(stat);
-      yield result;
-      result.typeData = switch (stat.type) {
-        // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
-        .directory => FileTypeData(type: .directory),
-        // TODO: 2 we should probably handle most cases (links, etc.)
-        // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
-        _ => FileTypeData.fromMimeType(mimedb.getMimeType(result.path)),
-      };
-      yield result;
-      // TODO: 2 load special data
-    }
+  Stream<DirReaderMessage> readDir(Directory directory) {
+    final response = StreamController<DirReaderMessage>();
+    final list = directory.list(followLinks: false);
+    final futures = <Future<void>>[];
+    final random = Random();
+    list.listen(
+      (e) {
+        final path = e.absolute.path;
+        response.add(SingleFileData(FileData(path: path)));
+        futures.add(() async {
+          final stat = await e.stat();
+          await Future.delayed(Duration(milliseconds: random.nextInt(1000)));
+          response.add(SingleStatData(path, FileStatData.fromStat(stat)));
+          await Future.delayed(Duration(milliseconds: random.nextInt(1000)));
+          response.add(
+            SingleTypeData(path, switch (stat.type) {
+              // TODO: 1 in these cases where we know the type from the stat, maybe we can do a single yield for stat+type
+              .directory => FileTypeData(type: .directory),
+              // TODO: 2 we should probably handle most cases (links, etc.)
+              // TODO: 1 if fromMimeType sometimes reads the file, there should probably be an async version, and then we do PileAwait with it
+              _ => FileTypeData.fromMimeType(mimedb.getMimeType(path)),
+            }),
+          );
+          // TODO: 2 load special data, according to type
+          await Future.delayed(Duration(milliseconds: random.nextInt(1000)));
+          response.add(SingleSpecialData(path, FileNoSpecialData()));
+        }());
+      },
+      onError: response.addError,
+      onDone: () {
+        response.add(FilesListDone());
+        Future.wait(futures).then((_) => response.close());
+      },
+    );
+    return response.stream;
   }
 }
 
-sealed class _IsolateReadDirData {}
+sealed class _DirReaderIsolateMessage {}
 
-class _FileDataIsolateReadDirData extends _IsolateReadDirData {
-  final List<FileData> fileData;
-  _FileDataIsolateReadDirData(this.fileData);
+class _DirReaderIsolateData extends _DirReaderIsolateMessage {
+  final FullUpdate message;
+  _DirReaderIsolateData(this.message);
 }
 
-class _EndIsolateReadDirData extends _IsolateReadDirData {}
+class _DirReaderIsolateEnd extends _DirReaderIsolateMessage {}
 
 class _IsolateStartData {
   final Directory directory;
@@ -123,7 +197,7 @@ class IsolateDirReader extends DirReader {
   late final SendPort _sp;
 
   @override
-  Stream<FileData> readDir(Directory directory) {
+  Stream<DirReaderMessage> readDir(Directory directory) {
     final rp = ReceivePort();
     final completer = Completer<bool>();
     _sp.send(
@@ -135,17 +209,14 @@ class IsolateDirReader extends DirReader {
       ),
     );
 
-    final response = StreamController<FileData>();
+    final response = StreamController<DirReaderMessage>();
 
     rp.listen((msg) {
-      final data = msg as _IsolateReadDirData;
+      final data = msg as _DirReaderIsolateMessage;
       switch (data) {
-        case _FileDataIsolateReadDirData(:final fileData):
-          // TODO: 2 should readDir just always return Stream<Iterable<FileData>>  ?
-          for (final data in fileData) {
-            response.add(data);
-          }
-        case _EndIsolateReadDirData():
+        case _DirReaderIsolateData(:final message):
+          response.add(message);
+        case _DirReaderIsolateEnd():
           completer.complete(true);
       }
     });
@@ -179,19 +250,113 @@ class IsolateDirReader extends DirReader {
 
     rpIsolate.listen((msg) async {
       final params = msg as _IsolateStartData;
-      List<FileData> tempList = [];
-      await for (final data in params.reader.readDir(params.directory)) {
-        tempList.add(data);
-        if (tempList.length >= params.batchSize) {
-          final sendList = tempList;
-          tempList = [];
-          params.port.send(_FileDataIsolateReadDirData(sendList));
+      bool filesDone = false;
+      int fileCount = 0;
+      int statCount = 0;
+      int typeCount = 0;
+      int specialCount = 0;
+      Map<String, FileData> tempFileData = {};
+      List<SingleStatData> tempStatData = [];
+      List<SingleTypeData> tempTypeData = [];
+      List<SingleSpecialData> tempSpecialData = [];
+      await for (final message in params.reader.readDir(params.directory)) {
+        switch (message) {
+          case SingleFileData(:final data):
+            fileCount++;
+            tempFileData[data.path] = data;
+          case SingleStatData(:final path, :final data):
+            statCount++;
+            if (tempFileData.containsKey(path)) {
+              tempFileData[path]!.statData = data;
+            } else {
+              tempStatData.add(message);
+            }
+          case SingleTypeData(:final path, :final data):
+            typeCount++;
+            if (tempFileData.containsKey(path)) {
+              tempFileData[path]!.typeData = data;
+            } else {
+              tempTypeData.add(message);
+            }
+          case SingleSpecialData(:final path, :final data):
+            specialCount++;
+            if (tempFileData.containsKey(path)) {
+              tempFileData[path]!.specialData = data;
+            } else {
+              tempSpecialData.add(message);
+            }
+          case FilesListDone():
+            filesDone = true;
+          case FullUpdate update:
+            fileCount = update.fileDataProcessedCount;
+            statCount = update.statDataProcessedCount;
+            typeCount = update.typeDataProcessedCount;
+            specialCount = update.specialDataProcessedCount;
+            for (final data in update.newFileData) {
+              tempFileData[data.path] = data;
+            }
+            for (final e in update.statDataUpdates) {
+              if (tempFileData.containsKey(e.path)) {
+                tempFileData[e.path]!.statData = e.data;
+              } else {
+                tempStatData.add(e);
+              }
+            }
+            for (final e in update.typeDataUpdates) {
+              if (tempFileData.containsKey(e.path)) {
+                tempFileData[e.path]!.typeData = e.data;
+              } else {
+                tempTypeData.add(e);
+              }
+            }
+            for (final e in update.specialDataUpdates) {
+              if (tempFileData.containsKey(e.path)) {
+                tempFileData[e.path]!.specialData = e.data;
+              } else {
+                tempSpecialData.add(e);
+              }
+            }
+        }
+        if ((fileCount + statCount + typeCount + specialCount) % params.batchSize == 0) {
+          params.port.send(
+            _DirReaderIsolateData(
+              FullUpdate(
+                newFileData: tempFileData.values.toList(),
+                statDataUpdates: tempStatData,
+                typeDataUpdates: tempTypeData,
+                specialDataUpdates: tempSpecialData,
+                fileCount: filesDone ? fileCount : null,
+                fileDataProcessedCount: fileCount,
+                statDataProcessedCount: statCount,
+                typeDataProcessedCount: typeCount,
+                specialDataProcessedCount: specialCount,
+              ),
+            ),
+          );
+          tempFileData = {};
+          tempStatData = [];
+          tempTypeData = [];
+          tempSpecialData = [];
         }
       }
-      if (tempList.isNotEmpty) {
-        params.port.send(_FileDataIsolateReadDirData(tempList));
+      if (tempFileData.isNotEmpty || tempStatData.isNotEmpty || tempTypeData.isNotEmpty || tempSpecialData.isNotEmpty) {
+        params.port.send(
+          _DirReaderIsolateData(
+            FullUpdate(
+              newFileData: tempFileData.values.toList(),
+              statDataUpdates: tempStatData,
+              typeDataUpdates: tempTypeData,
+              specialDataUpdates: tempSpecialData,
+              fileCount: fileCount,
+              fileDataProcessedCount: fileCount,
+              statDataProcessedCount: statCount,
+              typeDataProcessedCount: typeCount,
+              specialDataProcessedCount: specialCount,
+            ),
+          ),
+        );
       }
-      params.port.send(_EndIsolateReadDirData());
+      params.port.send(_DirReaderIsolateEnd());
     });
   }
 }
@@ -203,13 +368,47 @@ class ComputeDirReader extends DirReader {
   ComputeDirReader(this.reader);
 
   @override
-  Stream<FileData> readDir(Directory directory) async* {
-    final result = await compute((directory) {
-      return reader.readDir(directory).toList();
+  Stream<DirReaderMessage> readDir(Directory directory) async* {
+    yield await compute((directory) async {
+      final result = <String, FileData>{};
+      await for (final message in reader.readDir(directory)) {
+        switch (message) {
+          case SingleFileData(:final data):
+            result[data.path] = data;
+          case SingleStatData(:final path, :final data):
+            result[path]!.statData = data;
+          case SingleTypeData(:final path, :final data):
+            result[path]!.typeData = data;
+          case SingleSpecialData(:final path, :final data):
+            result[path]!.specialData = data;
+          case FullUpdate update:
+            for (final data in update.newFileData) {
+              result[data.path] = data;
+            }
+            for (final e in update.statDataUpdates) {
+              result[e.path]!.statData = e.data;
+            }
+            for (final e in update.typeDataUpdates) {
+              result[e.path]!.typeData = e.data;
+            }
+            for (final e in update.specialDataUpdates) {
+              result[e.path]!.specialData = e.data;
+            }
+          case FilesListDone():
+        }
+      }
+      return FullUpdate(
+        newFileData: result.values.toList(),
+        statDataUpdates: [],
+        typeDataUpdates: [],
+        specialDataUpdates: [],
+        fileCount: result.length,
+        fileDataProcessedCount: result.length,
+        statDataProcessedCount: result.length,
+        typeDataProcessedCount: result.length,
+        specialDataProcessedCount: result.length,
+      );
     }, directory);
-    for (final e in result) {
-      yield e;
-    }
   }
 }
 
@@ -233,7 +432,7 @@ class HddAwareDirReader extends DirReader {
   }
 
   @override
-  Stream<FileData> readDir(Directory directory) {
+  Stream<DirReaderMessage> readDir(Directory directory) {
     if (diskType.isRotational(directory.absolute.path)) {
       return hddReader.readDir(directory);
     } else {

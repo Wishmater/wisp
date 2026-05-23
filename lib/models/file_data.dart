@@ -101,7 +101,9 @@ enum FileType implements Comparable<FileType> {
   }
 }
 
-sealed class FileSpecialData {}
+sealed class FileSpecialData {
+  const FileSpecialData();
+}
 
 class FileDirectoryData extends FileSpecialData {
   int itemCount;
@@ -155,6 +157,10 @@ class FileImageData extends FileSpecialData {
     required this.width,
     required this.height,
   });
+}
+
+class FileNoSpecialData extends FileSpecialData {
+  const FileNoSpecialData();
 }
 
 class WrongFileSpecialDataException implements Exception {

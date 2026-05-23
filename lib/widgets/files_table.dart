@@ -118,6 +118,7 @@ class _TableViewViewport extends TwoDimensionalViewport {
       ..rowCount = rowCount
       ..colCount = colCount
       ..rowHeight = rowHeight
+      ..headerHeight = headerHeight
       ..columnSizes = columnSizes
       ..padding = padding;
   }
@@ -204,18 +205,30 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
     // Compute visible column range
-    final renderStartX = (horizontalOffset.pixels - cacheExtent - padding.left).coerceAtLeast(0);
-    final renderEndX = horizontalOffset.pixels + viewportDimension.width + cacheExtent;
-    final firstFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderStartX);
-    final firstCol = firstFullyVisibleCol == -1 ? colCount - 1 : (firstFullyVisibleCol - 1).coerceAtLeast(0);
-    final lastFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderEndX);
-    final lastCol = lastFullyVisibleCol == -1 ? colCount - 1 : firstFullyVisibleCol;
+    int firstCol, lastCol;
+    if (colCount == 0) {
+      firstCol = 0;
+      lastCol = -1;
+    } else {
+      final renderStartX = (horizontalOffset.pixels - cacheExtent - padding.left).coerceAtLeast(0);
+      final renderEndX = horizontalOffset.pixels + viewportDimension.width + cacheExtent;
+      final firstFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderStartX);
+      firstCol = firstFullyVisibleCol == -1 ? colCount - 1 : (firstFullyVisibleCol - 1).coerceAtLeast(0);
+      final lastFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderEndX);
+      lastCol = lastFullyVisibleCol == -1 ? colCount - 1 : firstFullyVisibleCol;
+    }
 
     // Compute visible row range
-    final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top).coerceAtLeast(0);
-    final renderEndY = verticalOffset.pixels + viewportDimension.height + cacheExtent;
-    final int firstRow = (renderStartY / cellHeight).floor().clamp(0, rowCount - 1);
-    final int lastRow = (renderEndY / cellHeight).ceil().clamp(0, rowCount - 1);
+    int firstRow, lastRow;
+    if (rowCount == 0) {
+      firstRow = 0;
+      lastRow = -1;
+    } else {
+      final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top).coerceAtLeast(0);
+      final renderEndY = verticalOffset.pixels + viewportDimension.height + cacheExtent;
+      firstRow = (renderStartY / cellHeight).floor().clamp(0, rowCount - 1);
+      lastRow = (renderEndY / cellHeight).ceil().clamp(0, rowCount - 1);
+    }
 
     for (int row = firstRow; row <= lastRow; row++) {
       // // Layout selection indicator
@@ -393,10 +406,10 @@ class FilesChildDelegate<R, C> extends TwoDimensionalChildDelegate {
 
   @override
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate) {
-    if (oldDelegate is! FilesChildDelegate) return true;
-    if (headerBuilder != oldDelegate.headerBuilder) return true;
-    if (rowBackgroundBuilder != oldDelegate.rowBackgroundBuilder) return true;
-    if (headerBackgroundBuilder != oldDelegate.headerBackgroundBuilder) return true;
+    // if (oldDelegate is! FilesChildDelegate) return true;
+    // if (headerBuilder != oldDelegate.headerBuilder) return true;
+    // if (rowBackgroundBuilder != oldDelegate.rowBackgroundBuilder) return true;
+    // if (headerBackgroundBuilder != oldDelegate.headerBackgroundBuilder) return true;
     return false;
   }
 }

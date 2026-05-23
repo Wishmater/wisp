@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dartx/dartx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:wisp/models/file_data.dart';
@@ -8,7 +9,7 @@ import 'package:wisp/services/dir_reader.dart';
 import 'package:wisp/services/xdg_mime.dart';
 import 'package:xdg_mime/xdg_mime.dart';
 
-final disposeDelay = Duration(seconds: 15);
+final disposeDelay = Duration(seconds: 30);
 
 final currentDirectory = NotifierProvider<CurrentDirectoryNotifier, String>(() {
   return CurrentDirectoryNotifier();
@@ -18,6 +19,7 @@ class CurrentDirectoryNotifier extends Notifier<String> {
   @override
   String build() {
     return File('').absolute.path; // TODO: 1 this should probably come from args
+    return '/nix/var/nix/profiles/';
   }
 
   void goUp() {
@@ -91,14 +93,48 @@ bool openFile(FileData fileData) {
 final directoryList = ApiProviderFamily<List<FileData>, String>(
   (path) => ApiState(
     (apiState) async {
-      final directory = Directory(path);
       // TODO: 2 maybe we could actually listen to the stream and paint the UI in multiple steps? that would be cool maybe?
-      final stream = dirReader.readDir(directory);
-      final response = await stream.toSet();
-      for (final e in response) {
-        print("${e.path} - ${e.typeData?.mimeType}");
+      final sort = apiState.ref.watch(currentSort);
+      final Map<String, FileData> result = {};
+      int iteration = 1;
+      final stopwatch = Stopwatch()..start();
+      await for (final message in dirReader.readDir(Directory(path))) {
+        switch (message) {
+          case SingleFileData(:final data):
+            result[data.path] = data;
+          case SingleStatData(:final path, :final data):
+            result[path]!.statData = data;
+          case SingleTypeData(:final path, :final data):
+            result[path]!.typeData = data;
+          case SingleSpecialData(:final path, :final data):
+            result[path]!.specialData = data;
+          case FilesListDone():
+            apiState.selfTotalNotifier.value = result.length * 4;
+          case FullUpdate update:
+            for (final data in update.newFileData) {
+              result[data.path] = data;
+            }
+            for (final e in update.statDataUpdates) {
+              result[e.path]!.statData = e.data;
+            }
+            for (final e in update.typeDataUpdates) {
+              result[e.path]!.typeData = e.data;
+            }
+            for (final e in update.specialDataUpdates) {
+              result[e.path]!.specialData = e.data;
+            }
+            apiState.selfTotalNotifier.value = update.totalCount?.toDouble();
+            apiState.selfProgressNotifier.value = update.totalProcessedCount.toDouble();
+        }
+        print(
+          'Received message ${iteration++} after ${stopwatch.elapsed}: total=${apiState.selfTotalNotifier.value} done=${apiState.selfProgressNotifier.value}',
+        );
+        // TODO: 2 optimize sorting
+        apiState.state = AsyncValue.data(result.values.sortedWith((a, b) => a.compareTo(b, sort.$1, asc: sort.$2)));
+        apiState.ref.notifyListeners();
       }
-      return response.toList();
+      // TODO: 2 use apiState.ref.OnDispose to cancel operation if it's still running
+      return result.values.sortedWith((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
     },
     disposeDelay: disposeDelay,
   ),
@@ -107,10 +143,9 @@ final directoryList = ApiProviderFamily<List<FileData>, String>(
 final sortedDirectoryList = ApiProviderFamily<List<FileData>, String>(
   (path) => ApiState(
     (apiState) async {
-      final sort = apiState.ref.watch(currentSort);
       final list = await apiState.watch(directoryList.call(path));
+      print('PASS SORT');
       final result = List<FileData>.from(list);
-      result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
       return result;
     },
     disposeDelay: disposeDelay,
