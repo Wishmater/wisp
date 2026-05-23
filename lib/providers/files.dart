@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dartx/dartx.dart';
@@ -90,11 +91,9 @@ bool openFile(FileData fileData) {
 //   ),
 // );
 
-final directoryList = ApiProviderFamily<List<FileData>, String>(
+final directoryList = ApiProviderFamily<Iterable<FileData>, String>(
   (path) => ApiState(
     (apiState) async {
-      // TODO: 2 maybe we could actually listen to the stream and paint the UI in multiple steps? that would be cool maybe?
-      final sort = apiState.ref.watch(currentSort);
       final Map<String, FileData> result = {};
       int iteration = 1;
       final stopwatch = Stopwatch()..start();
@@ -127,14 +126,15 @@ final directoryList = ApiProviderFamily<List<FileData>, String>(
             apiState.selfProgressNotifier.value = update.totalProcessedCount.toDouble();
         }
         print(
-          'Received message ${iteration++} after ${stopwatch.elapsed}: total=${apiState.selfTotalNotifier.value} done=${apiState.selfProgressNotifier.value}',
+          'Received message ${iteration++} after ${stopwatch.elapsed}:'
+          ' total=${apiState.selfTotalNotifier.value}'
+          ' done=${apiState.selfProgressNotifier.value}',
         );
-        // TODO: 2 optimize sorting
-        apiState.state = AsyncValue.data(result.values.sortedWith((a, b) => a.compareTo(b, sort.$1, asc: sort.$2)));
+        apiState.state = AsyncValue.data(result.values);
         apiState.ref.notifyListeners();
       }
       // TODO: 2 use apiState.ref.OnDispose to cancel operation if it's still running
-      return result.values.sortedWith((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
+      return result.values;
     },
     disposeDelay: disposeDelay,
   ),
@@ -143,10 +143,22 @@ final directoryList = ApiProviderFamily<List<FileData>, String>(
 final sortedDirectoryList = ApiProviderFamily<List<FileData>, String>(
   (path) => ApiState(
     (apiState) async {
-      final list = await apiState.watch(directoryList.call(path));
-      print('PASS SORT');
-      final result = List<FileData>.from(list);
-      return result;
+      // TODO: 2 optimize sorting
+      apiState.selfTotalNotifier.value = 0;
+      apiState.selfProgressNotifier.value = 0;
+      final sort = apiState.ref.watch(currentSort);
+      final completer = Completer();
+      final subscription = apiState.ref.listen(directoryList.call(path), (prev, next) {
+        final result = List<FileData>.from(next.value!);
+        print('PASS SORT ${DateTime.now()}');
+        result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
+        apiState.state = AsyncValue.data(result);
+      });
+      await apiState.watch(directoryList.call(path));
+      subscription.close();
+      print('PASS END SORT ${DateTime.now()}');
+      await completer.future;
+      return apiState.state.value!;
     },
     disposeDelay: disposeDelay,
   ),

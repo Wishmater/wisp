@@ -5,7 +5,7 @@ import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/files.dart';
-import 'package:wisp/widgets/files_table.dart';
+import 'package:wisp/widgets/table_view.dart';
 
 class FilesList extends ConsumerWidget {
   const FilesList({super.key});
@@ -17,7 +17,7 @@ class FilesList extends ConsumerWidget {
     final currentDirectoryValue = ref.watch(currentDirectory);
     final verticalController = ScrollController();
     final horizontalController = ScrollController();
-    final notifier = ref.watch(directoryList.call(currentDirectoryValue).notifier);
+    final notifier = ref.watch(sortedDirectoryList.call(currentDirectoryValue).notifier);
     // TODO: 2 implement double-scrollbar support in ScrollbarFromZero
     return Stack(
       children: [
@@ -31,7 +31,7 @@ class FilesList extends ConsumerWidget {
               direction: OpacityGradient.vertical,
               scrollController: verticalController,
               child: ApiProviderBuilder(
-                provider: directoryList.call(currentDirectoryValue),
+                provider: sortedDirectoryList.call(currentDirectoryValue),
                 transitionDuration: Duration.zero,
                 addLoadingStateAsValueKeys: false,
                 loadingBuilder: (context, progress) {
@@ -54,12 +54,12 @@ class FilesList extends ConsumerWidget {
                   );
                 },
                 dataBuilder: (context, data) {
-                  print('BUILD ${data.length}');
+                  print('BUILD: ${data.map((e) => e.filename)}');
                   return TableView(
                     rows: data.toList(),
                     columns: columns,
                     columnSizes: columnSizes,
-                    rowHeight: 48,
+                    rowHeight: 36,
                     headerHeight: 48,
                     horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
                     verticalDetails: ScrollableDetails.vertical(controller: verticalController),
@@ -113,6 +113,7 @@ class FilesList extends ConsumerWidget {
               left: 0,
               right: 0,
               top: 0,
+              // TODO: 3 make better progressIndicator that maybe use motor to smoothly change the value
               child: LinearProgressIndicator(
                 value: progress,
               ),
