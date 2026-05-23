@@ -9,8 +9,8 @@ import 'package:wisp/services/disk_type.dart';
 import 'package:wisp/services/xdg_mime.dart';
 
 final dirReader = HddAwareDirReader(
-  // ssdReader: IsolateDirReader(SyncDirReader()),
-  ssdReader: IsolateDirReader(PileAwaitDirReader()),
+  ssdReader: IsolateDirReader(SyncDirReader()),
+  // ssdReader: IsolateDirReader(PileAwaitDirReader()),
   hddReader: IsolateDirReader(PileAwaitDirReader()),
 );
 

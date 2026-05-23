@@ -64,24 +64,39 @@ class FilesList extends ConsumerWidget {
                     horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
                     verticalDetails: ScrollableDetails.vertical(controller: verticalController),
                     padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
-                    builder: (context, fileData, statType, _, _) {
-                      final value = fileData.getFormatted(context, statType);
-                      return Container(
-                        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                        alignment: Alignment.centerLeft,
-                        child: Text(value ?? ''), // TODO: 2 show loading if value is null?
+                    builder: (context, fileData, fileField, _, _) {
+                      final value = fileData.getFormatted(context, fileField);
+                      return InkWell(
+                        onTap: () {
+                          print('XDD');
+                        },
+                        child: Container(
+                          padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+                          alignment: Alignment.centerLeft,
+                          child: Text(value ?? ''), // TODO: 2 show loading if value is null?
+                        ),
                       );
                     },
-                    headerBuilder: (context, statType, _) {
-                      final value = statType.getUiName(context);
-                      return Container(
-                        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-                        alignment: Alignment.centerLeft,
-                        child: Text(value),
+                    headerBuilder: (context, fileField, _) {
+                      final value = fileField.getUiName(context);
+                      return InkWell(
+                        onTap: () {
+                          ref.read(currentSort.notifier).setField(fileField);
+                        },
+                        child: Container(
+                          padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+                          alignment: Alignment.centerLeft,
+                          child: Text(value),
+                        ),
                       );
                     },
                     headerBackgroundBuilder: (context) {
-                      return ColoredBox(color: Theme.of(context).canvasColor.withValues(alpha: 0.75));
+                      return InkWell(
+                        onTap: () {
+                          print('WTF');
+                        },
+                        child: Material(color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.75)),
+                      );
                     },
                     rowBackgroundBuilder: (context, fileData, _) {
                       return Material(

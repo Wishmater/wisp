@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartx/dartx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:wisp/models/file_data.dart';
@@ -46,8 +45,9 @@ class FileSortNotifier extends Notifier<FileSort> {
   void setField(FileDataField value) {
     if (value == state.$1) {
       state = (value, !state.$2);
+    } else {
+      state = (value, true);
     }
-    state = (value, true);
   }
 }
 
@@ -147,18 +147,21 @@ final sortedDirectoryList = ApiProviderFamily<List<FileData>, String>(
       apiState.selfTotalNotifier.value = 0;
       apiState.selfProgressNotifier.value = 0;
       final sort = apiState.ref.watch(currentSort);
-      final completer = Completer();
       final subscription = apiState.ref.listen(directoryList.call(path), (prev, next) {
+        if (apiState.wholeProgressNotifier.value == 1) {
+          return;
+        }
         final result = List<FileData>.from(next.value!);
-        print('PASS SORT ${DateTime.now()}');
+        print('PASS SORT $sort ${DateTime.now()}');
         result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
         apiState.state = AsyncValue.data(result);
       });
-      await apiState.watch(directoryList.call(path));
+      final list = await apiState.watch(directoryList.call(path));
       subscription.close();
-      print('PASS END SORT ${DateTime.now()}');
-      await completer.future;
-      return apiState.state.value!;
+      final result = List<FileData>.from(list);
+      result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
+      print('PASS END SORT $sort ${DateTime.now()}');
+      return result;
     },
     disposeDelay: disposeDelay,
   ),

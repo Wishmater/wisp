@@ -349,11 +349,11 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
 
   @override
   void layoutChildSequence() {
+    print('layoutChildSequence()');
     final padding = this.padding + EdgeInsets.only(top: headerHeight);
-    final cellHeight = rowHeight;
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
     final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal;
-    final maxHeight = cellHeight * rowCount + padding.vertical;
+    final maxHeight = rowHeight * rowCount + padding.vertical;
     horizontalOffset.applyContentDimensions(0, (maxWidth - viewportDimension.width).coerceAtLeast(0));
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
@@ -377,11 +377,68 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
     } else {
       final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top).coerceAtLeast(0);
       final renderEndY = verticalOffset.pixels + viewportDimension.height + cacheExtent;
-      firstRow = (renderStartY / cellHeight).floor().clamp(0, rowCount - 1);
-      lastRow = (renderEndY / cellHeight).ceil().clamp(0, rowCount - 1);
+      firstRow = (renderStartY / rowHeight).floor().clamp(0, rowCount - 1);
+      lastRow = (renderEndY / rowHeight).ceil().clamp(0, rowCount - 1);
+    }
+
+    // Layout header cells
+    for (int col = firstCol; col <= lastCol; col++) {
+      final header = buildOrObtainChildFor(
+        TableViewHeaderChildVicinity(xIndex: col, yCount: rowCount),
+      );
+      if (header != null) {
+        final cellWidth = columnSizes[col];
+        final headerParentData = header.parentData! as TwoDimensionalViewportParentData;
+        header.layout(BoxConstraints.tight(Size(cellWidth, headerHeight)));
+        headerParentData.layoutOffset = Offset(
+          padding.left + columnOffsets[col] - horizontalOffset.pixels,
+          this.padding.top,
+        );
+      }
+    }
+    // Layout header background, background must be layed out after actual cells, because order affects gestures
+    final rowBackground = buildOrObtainChildFor(
+      TableViewHeaderBackgroundVicinity(yCount: rowCount),
+    );
+    if (rowBackground != null) {
+      final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
+      // TODO: 3 would it be better if we limit this to the viewport with instead of spanning over edges
+      rowBackground.layout(BoxConstraints.tight(Size(maxWidth, headerHeight)));
+      rowBackgroundParentData.layoutOffset = Offset(
+        0,
+        this.padding.top,
+      );
     }
 
     for (int row = firstRow; row <= lastRow; row++) {
+      // Layout row cells
+      for (int col = firstCol; col <= lastCol; col++) {
+        final child = buildOrObtainChildFor(
+          TableViewChildVicinity(xIndex: col, yIndex: row),
+        );
+        if (child != null) {
+          final cellWidth = columnSizes[col];
+          final parentData = child.parentData! as TwoDimensionalViewportParentData;
+          child.layout(BoxConstraints.tight(Size(cellWidth, rowHeight)));
+          parentData.layoutOffset = Offset(
+            padding.left + columnOffsets[col] - horizontalOffset.pixels,
+            padding.top + row * rowHeight - verticalOffset.pixels,
+          );
+        }
+      }
+      // Layout row background, background must be layed out after actual cells, because order affects gestures
+      final rowBackground = buildOrObtainChildFor(
+        TableViewRowBackgroundVicinity(yIndex: row),
+      );
+      if (rowBackground != null) {
+        final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
+        // TODO: 3 it probably looks better if we limit this to the viewport with instead of spanning over edges
+        rowBackground.layout(BoxConstraints.tight(Size(maxWidth, rowHeight)));
+        rowBackgroundParentData.layoutOffset = Offset(
+          0,
+          padding.top + row * rowHeight - verticalOffset.pixels,
+        );
+      }
       // // Layout selection indicator
       // final selection = buildOrObtainChildFor(
       //   SelectedRowChildVicinity(yIndex: row, extent: 0),
@@ -395,63 +452,6 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       //     padding.top + row * cellHeight - verticalOffset.pixels,
       //   );
       // }
-      // Layout row background
-      final rowBackground = buildOrObtainChildFor(
-        TableViewRowBackgroundVicinity(yIndex: row),
-      );
-      if (rowBackground != null) {
-        final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
-        // TODO: 3 it probably looks better if we limit this to the viewport with instead of spanning over edges
-        rowBackground.layout(BoxConstraints.tight(Size(maxWidth, cellHeight)));
-        rowBackgroundParentData.layoutOffset = Offset(
-          0,
-          padding.top + row * cellHeight - verticalOffset.pixels,
-        );
-      }
-      // Layout row cells
-      for (int col = firstCol; col <= lastCol; col++) {
-        final child = buildOrObtainChildFor(
-          TableViewChildVicinity(xIndex: col, yIndex: row),
-        );
-        if (child != null) {
-          final cellWidth = columnSizes[col];
-          final parentData = child.parentData! as TwoDimensionalViewportParentData;
-          child.layout(BoxConstraints.tight(Size(cellWidth, cellHeight)));
-          parentData.layoutOffset = Offset(
-            padding.left + columnOffsets[col] - horizontalOffset.pixels,
-            padding.top + row * cellHeight - verticalOffset.pixels,
-          );
-        }
-      }
-    }
-
-    // Layout header background
-    final rowBackground = buildOrObtainChildFor(
-      TableViewHeaderBackgroundVicinity(yCount: rowCount),
-    );
-    if (rowBackground != null) {
-      final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
-      // TODO: 3 would it be better if we limit this to the viewport with instead of spanning over edges
-      rowBackground.layout(BoxConstraints.tight(Size(maxWidth, cellHeight)));
-      rowBackgroundParentData.layoutOffset = Offset(
-        0,
-        this.padding.top,
-      );
-    }
-    for (int col = firstCol; col <= lastCol; col++) {
-      // Layout header cells
-      final header = buildOrObtainChildFor(
-        TableViewHeaderChildVicinity(xIndex: col, yCount: rowCount),
-      );
-      if (header != null) {
-        final cellWidth = columnSizes[col];
-        final headerParentData = header.parentData! as TwoDimensionalViewportParentData;
-        header.layout(BoxConstraints.tight(Size(cellWidth, cellHeight)));
-        headerParentData.layoutOffset = Offset(
-          padding.left + columnOffsets[col] - horizontalOffset.pixels,
-          this.padding.top,
-        );
-      }
     }
   }
 }
