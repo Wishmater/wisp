@@ -453,8 +453,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: riverpod3
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: dev
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -470,8 +470,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_actions"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -479,8 +479,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_animated_switcher_image"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -488,8 +488,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_animations"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -497,8 +497,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_api_handling"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -506,8 +506,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_app_update"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -515,8 +515,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_appbar"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -524,8 +524,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_combo"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -533,8 +533,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_comparable_list"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -542,8 +542,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_copy_ensure_visible"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -551,8 +551,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_copy_page_indicator"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -560,8 +560,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_copy_sticky_header"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -569,8 +569,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_copy_time_picker"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -578,8 +578,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_dao"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -587,8 +587,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_date_picker"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -596,8 +596,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_dialog"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -605,8 +605,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_drawer_menu"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -614,8 +614,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_expansion_tile"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -623,8 +623,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_export"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -632,8 +632,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_file_picker"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -641,8 +641,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_file_saver"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -650,8 +650,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_focus_traversal"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -659,8 +659,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_future_handling"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -668,8 +668,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_gesture_relayer"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -677,8 +677,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_image"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -686,8 +686,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_localizations"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -695,8 +695,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_log"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -704,8 +704,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_logo"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -713,8 +713,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_notification_relayer"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -722,8 +722,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_number_format"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -731,8 +731,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_opacity_gradient"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -740,8 +740,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_platform"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -749,8 +749,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_popup"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -758,8 +758,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_router"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -767,8 +767,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_scaffold"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -776,8 +776,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_scrollbar"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -785,8 +785,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_selectable_icon"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -794,8 +794,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_simple_shadow"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -803,8 +803,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_snackbar"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -812,8 +812,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_table"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -821,8 +821,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_theme"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -830,8 +830,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_tooltip"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -839,8 +839,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_translucent_ink_well"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -848,8 +848,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_ui_scale"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -857,8 +857,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_ui_utility"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -866,8 +866,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_value_string"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -875,8 +875,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_web_compile_file"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -884,8 +884,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_web_initial_config"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
@@ -893,8 +893,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/fz_web_platform_impl"
-      ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
-      resolved-ref: d299b7fabb7fdc93e4392e5e4b4bb47fa0825e19
+      ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
+      resolved-ref: "7a6c5961e78bfb2ac18014b4c17ece0a75da9630"
       url: "https://github.com/FromZeroDev/from_zero_ui"
     source: git
     version: "0.1.0"
