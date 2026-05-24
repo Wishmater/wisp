@@ -1,3 +1,4 @@
+import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
@@ -26,6 +27,8 @@ class FilesList extends ConsumerWidget {
     final drawerWidthValue = ref.watch(drawerWidth);
     return Stack(
       children: [
+        // TODO: 2 make this a feature in ScrollbarFromZero .padding, and it will internally just do this with mediaQuery
+        // for the scrollbars
         MediaQuery(
           data: mediaQuery.copyWith(
             padding:
@@ -43,7 +46,7 @@ class FilesList extends ConsumerWidget {
               controller: horizontalController,
               blockScrollNotifications: false,
               child: ScrollOpacityGradient(
-                direction: OpacityGradient.bottom,
+                direction: OpacityGradient.vertical,
                 scrollController: verticalController,
                 child: ApiProviderBuilder(
                   provider: sortedDirectoryList.call(currentDirectoryValue),
