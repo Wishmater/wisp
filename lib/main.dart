@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wisp/services/dir_reader.dart';
 import 'package:wisp/services/xdg_mime.dart';
-import 'package:wisp/ui/explorer_scaffold.dart';
+import 'package:wisp/ui/scaffold.dart';
 
 void main() async {
   final pureDartFutures = {

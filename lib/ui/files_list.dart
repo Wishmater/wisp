@@ -6,6 +6,7 @@ import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/files.dart';
+import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/widgets/table_view.dart';
 
 class FilesList extends ConsumerWidget {
@@ -19,75 +20,97 @@ class FilesList extends ConsumerWidget {
     final verticalController = ScrollController();
     final horizontalController = ScrollController();
     final notifier = ref.watch(sortedDirectoryList.call(currentDirectoryValue).notifier);
-    // TODO: 2 implement double-scrollbar support in ScrollbarFromZero
+    // PERF: 2 listening to the whole media query is expensive, so make sure this rebuilds the least amount of widgets possible
+    final mediaQuery = MediaQuery.of(context);
+    final appbarHeightValue = ref.watch(appbarHeight);
+    final drawerWidthValue = ref.watch(drawerWidth);
     return Stack(
       children: [
-        ScrollbarFromZero(
-          controller: verticalController,
-          applyOpacityGradientToChildren: false,
+        MediaQuery(
+          data: mediaQuery.copyWith(
+            padding:
+                mediaQuery.padding +
+                EdgeInsets.only(
+                  top: appbarHeightValue,
+                  left: drawerWidthValue,
+                ),
+          ),
+          // TODO: 2 implement double-scrollbar support in ScrollbarFromZero
           child: ScrollbarFromZero(
-            controller: horizontalController,
-            blockScrollNotifications: false,
-            child: ScrollOpacityGradient(
-              direction: OpacityGradient.bottom,
-              scrollController: verticalController,
-              child: ApiProviderBuilder(
-                provider: sortedDirectoryList.call(currentDirectoryValue),
-                transitionDuration: Duration.zero,
-                addLoadingStateAsValueKeys: false,
-                loadingBuilder: (context, progress) {
-                  if (progress == null) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: LinearProgressIndicator(),
-                    );
-                  }
-                  return ValueListenableBuilder(
-                    valueListenable: progress,
-                    builder: (context, value, _) {
+            controller: verticalController,
+            applyOpacityGradientToChildren: false,
+            child: ScrollbarFromZero(
+              controller: horizontalController,
+              blockScrollNotifications: false,
+              child: ScrollOpacityGradient(
+                direction: OpacityGradient.bottom,
+                scrollController: verticalController,
+                child: ApiProviderBuilder(
+                  provider: sortedDirectoryList.call(currentDirectoryValue),
+                  transitionDuration: Duration.zero,
+                  addLoadingStateAsValueKeys: false,
+                  loadingBuilder: (context, progress) {
+                    if (progress == null) {
                       return Align(
                         alignment: Alignment.topCenter,
-                        child: LinearProgressIndicator(
-                          value: value,
-                        ),
+                        child: LinearProgressIndicator(),
                       );
-                    },
-                  );
-                },
-                dataBuilder: (context, data) {
-                  return TableView(
-                    rows: data.toList(),
-                    columns: columns,
-                    columnSizes: columnSizes,
-                    rowHeight: 36,
-                    headerHeight: 48,
-                    horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
-                    verticalDetails: ScrollableDetails.vertical(controller: verticalController),
-                    padding: EdgeInsets.only(left: 16, right: 24, bottom: 48),
-                    builder: (context, fileData, fileField, _, _) {
-                      return FileCell(fileData: fileData, fileField: fileField);
-                    },
-                    headerBuilder: (context, fileField, _) {
-                      return HeaderCell(fileField: fileField);
-                    },
-                    rowBackgroundBuilder: (context, fileData, _) {
-                      return InkWell(
-                        onDoubleTap: () {
-                          if (fileData.typeData?.type == .directory) {
-                            ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
-                          } else {
-                            openFile(fileData);
-                          }
-                        },
-                      );
-                    },
-                    headerBackgroundBuilder: (context) {
-                      return Material(
-                        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.75),
-                      );
-                    },
-                  );
-                },
+                    }
+                    return ValueListenableBuilder(
+                      valueListenable: progress,
+                      builder: (context, value, _) {
+                        return Align(
+                          alignment: Alignment.topCenter,
+                          child: LinearProgressIndicator(
+                            value: value,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  dataBuilder: (context, data) {
+                    // PERF: 2 maybe move this into a separate widget to rebuild less
+                    final appbarHeightValue = ref.watch(appbarHeight);
+                    final drawerWidthValue = ref.watch(drawerWidth);
+                    return TableView(
+                      rows: data.toList(),
+                      columns: columns,
+                      columnSizes: columnSizes,
+                      rowHeight: 36,
+                      headerHeight: 48,
+                      horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
+                      verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+                      padding: EdgeInsets.only(
+                        top: appbarHeightValue,
+                        left: 16 + drawerWidthValue,
+                        right: 24,
+                        bottom: 48,
+                      ),
+                      builder: (context, fileData, fileField, _, _) {
+                        return FileCell(fileData: fileData, fileField: fileField);
+                      },
+                      headerBuilder: (context, fileField, _) {
+                        return HeaderCell(fileField: fileField);
+                      },
+                      rowBackgroundBuilder: (context, fileData, _) {
+                        return InkWell(
+                          onDoubleTap: () {
+                            if (fileData.typeData?.type == .directory) {
+                              ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
+                            } else {
+                              openFile(fileData);
+                            }
+                          },
+                        );
+                      },
+                      headerBackgroundBuilder: (context) {
+                        return Material(
+                          color: Theme.of(context).canvasColor.withValues(alpha: 0.75),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ),
