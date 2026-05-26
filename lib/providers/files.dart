@@ -4,51 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
+import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/services/dir_reader.dart';
 import 'package:wisp/services/xdg_mime.dart';
 import 'package:xdg_mime/xdg_mime.dart';
 
 final disposeDelay = Duration(seconds: 30);
-
-final currentDirectory = NotifierProvider<CurrentDirectoryNotifier, String>(() {
-  return CurrentDirectoryNotifier();
-});
-
-class CurrentDirectoryNotifier extends Notifier<String> {
-  @override
-  String build() {
-    return File('').absolute.path; // TODO: 1 this should probably come from args
-    return '/nix/var/nix/profiles/';
-  }
-
-  void goUp() {
-    state = File(state).parent.absolute.path;
-  }
-
-  void setCurrentDirectory(String path) {
-    state = path;
-  }
-}
-
-typedef FileSort = (FileDataField field, bool asc);
-final currentSort = NotifierProvider<FileSortNotifier, FileSort>(() {
-  return FileSortNotifier();
-});
-
-class FileSortNotifier extends Notifier<FileSort> {
-  @override
-  FileSort build() {
-    return (FileDataField.filename, true);
-  }
-
-  void setField(FileDataField value) {
-    if (value == state.$1) {
-      state = (value, !state.$2);
-    } else {
-      state = (value, true);
-    }
-  }
-}
 
 bool openFile(FileData fileData) {
   // TODO: 1 should this go get the typeData if it's not loaded yet? or should the UI delay the call to here until it is loaded?

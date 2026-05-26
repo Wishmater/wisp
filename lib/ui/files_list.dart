@@ -1,4 +1,3 @@
-import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_api_handling.dart';
@@ -6,6 +5,7 @@ import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
+import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/widgets/table_view.dart';
