@@ -1,4 +1,5 @@
 /// Native file API for Dart — file descriptors, full stat info, fcntl, and more.
+library;
 
 export 'src/native_file.dart';
 export 'src/native_stat.dart';
