@@ -550,7 +550,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
           );
           selectionParentData.layoutOffset = Offset(
             padding.left + hardPadding.left - horizontalOffset.pixels,
-            padding.top + hardPadding.top + selectionStart! * rowHeight - verticalOffset.pixels,
+            padding.top + hardPadding.top + selectionStart * rowHeight - verticalOffset.pixels,
           );
         }
         selectionStart = null;
