@@ -135,7 +135,7 @@ class _FilesTable extends ConsumerWidget {
           columns: columns,
           columnSizes: columnSizes,
           rowHeight: 36,
-          headerHeight: 48,
+          headerHeight: 30,
           horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
           verticalDetails: ScrollableDetails.vertical(controller: verticalController),
           relayoutListenable: relayoutListener,
@@ -158,7 +158,7 @@ class _FilesTable extends ConsumerWidget {
           },
           headerBackgroundBuilder: (context) {
             return Material(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
+              color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: 0.75),
             );
           },
           selectionBuilder: (context) {
@@ -191,7 +191,7 @@ class _FileRowBackground extends ConsumerWidget {
     // TODO: 1 implement custom hover highlight
     // TODO: 1 implement custom ink splash only on double click
     return ColoredBox(
-      color: index % 2 == 0 ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow,
+      color: index % 2 != 0 ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow,
       child: Padding(
         padding: EdgeInsets.only(
           left: _FilesTable.padding.left,
@@ -274,14 +274,13 @@ class _FileHeaderCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final value = fileField.getUiName(context);
     return ExcludeFocusTraversal(
       child: InkWell(
         onTap: () {
           ref.read(currentSort.notifier).setField(fileField);
         },
         child: Padding(
-          padding: EdgeInsetsGeometry.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
           child: Align(
             alignment: Alignment.centerLeft,
             child: IntrinsicWidth(
@@ -289,8 +288,9 @@ class _FileHeaderCell extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      value,
+                      fileField.getUiName(context),
                       maxLines: 1,
+                      style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
                   Consumer(
@@ -301,6 +301,7 @@ class _FileHeaderCell extends ConsumerWidget {
                       }
                       return Icon(
                         currentSortValue.asc ? Icons.arrow_drop_down : Icons.arrow_drop_up,
+                        color: Theme.of(context).colorScheme.outline,
                       );
                     },
                   ),

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final appbarHeight = NotifierProvider<DimensionNotifier, double>(() {
-  return DimensionNotifier(56);
+  return DimensionNotifier(42);
 });
 
 final drawerWidth = NotifierProvider<DimensionNotifier, double>(() {
