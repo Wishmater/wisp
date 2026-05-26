@@ -10,7 +10,7 @@ class ExplorerAppbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final color = AppBarTheme.of(context).backgroundColor ?? Theme.of(context).canvasColor;
+    final color = AppBarTheme.of(context).backgroundColor ?? Theme.of(context).colorScheme.surface;
     return AppbarFromZero(
       title: const PathViewer(),
       primary: true,

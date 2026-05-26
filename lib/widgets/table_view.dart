@@ -8,6 +8,8 @@ typedef TableViewChildBuilder<R, C> = Widget? Function(BuildContext, R row, C co
 typedef TableViewHeaderBuilder<C> = Widget? Function(BuildContext, C column, int colIndex);
 typedef TableViewRowBackgroundBuilder<R> = Widget? Function(BuildContext, R row, int rowIndex);
 typedef TableViewHeaderBackgroundBuilder = Widget? Function(BuildContext);
+typedef TableViewSelectedChecker<R> = bool Function(R row, int rowIndex);
+typedef TableViewSelectionBuilder = Widget? Function(BuildContext);
 
 class TableView<R, C> extends StatefulWidget {
   final List<R> rows;
@@ -16,13 +18,17 @@ class TableView<R, C> extends StatefulWidget {
   final double headerHeight;
   final List<double> columnSizes;
   final EdgeInsets padding;
+  final EdgeInsets hardPadding;
   final ScrollableDetails verticalDetails;
   final ScrollableDetails horizontalDetails;
-  final Widget? Function(BuildContext, R row, C column, int rowIndex, int colIndex) builder;
-  final Widget? Function(BuildContext, C column, int colIndex)? headerBuilder;
-  final Widget? Function(BuildContext, R row, int rowIndex)? rowBackgroundBuilder;
-  final Widget? Function(BuildContext)? headerBackgroundBuilder;
+  final TableViewChildBuilder<R, C> builder;
+  final TableViewHeaderBuilder<C>? headerBuilder;
+  final TableViewRowBackgroundBuilder<R>? rowBackgroundBuilder;
+  final TableViewHeaderBackgroundBuilder? headerBackgroundBuilder;
+  final TableViewSelectedChecker<R>? selectedChecker;
+  final TableViewSelectionBuilder? selectionBuilder;
   final bool addRepaintBoundaries;
+  final Listenable? relayoutListenable;
 
   const TableView({
     required this.rows,
@@ -32,12 +38,16 @@ class TableView<R, C> extends StatefulWidget {
     required this.columnSizes,
     required this.builder,
     this.padding = EdgeInsets.zero,
+    this.hardPadding = EdgeInsets.zero,
     this.verticalDetails = const ScrollableDetails.vertical(),
     this.horizontalDetails = const ScrollableDetails.horizontal(),
     this.headerBuilder,
     this.rowBackgroundBuilder,
     this.headerBackgroundBuilder,
+    this.selectionBuilder,
+    this.selectedChecker,
     this.addRepaintBoundaries = true,
+    this.relayoutListenable,
     super.key,
   });
 
@@ -60,6 +70,7 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
     delegate.headerBuilder = widget.headerBuilder;
     delegate.rowBackgroundBuilder = widget.rowBackgroundBuilder;
     delegate.headerBackgroundBuilder = widget.headerBackgroundBuilder;
+    delegate.selectionBuilder = widget.selectionBuilder;
     delegate.addRepaintBoundaries = widget.addRepaintBoundaries;
     delegate.invalidationNotifier = invalidationNotifier;
     if (widget.addRepaintBoundaries != oldWidget.addRepaintBoundaries
@@ -91,23 +102,27 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
         }
       }
       // invalidate reserved rows after the last one that will be reused because row count changed
-      if (widget.rows.length > oldWidget.rows.length) {
-        for (int i = 0; i < _reservedAfterY; i++) {
-          invalidateRows.add(oldWidget.rows.length + i);
-        }
-      } else {
-        for (int i = 0; i < _reservedAfterY; i++) {
-          invalidateRows.add(widget.rows.length + i);
+      if (widget.rows.length != oldWidget.rows.length) {
+        if (widget.rows.length > oldWidget.rows.length) {
+          for (int i = 0; i < _reservedAfterY; i++) {
+            invalidateRows.add(oldWidget.rows.length + i);
+          }
+        } else {
+          for (int i = 0; i < _reservedAfterY; i++) {
+            invalidateRows.add(widget.rows.length + i);
+          }
         }
       }
       // invalidate reserved columns after the last one that will be reused because col count changed
-      if (widget.columns.length > oldWidget.columns.length) {
-        for (int i = 0; i < _reservedAfterX; i++) {
-          invalidateCols.add(oldWidget.columns.length + i);
-        }
-      } else {
-        for (int i = 0; i < _reservedAfterX; i++) {
-          invalidateCols.add(widget.columns.length + i);
+      if (widget.columns.length != oldWidget.columns.length) {
+        if (widget.columns.length > oldWidget.columns.length) {
+          for (int i = 0; i < _reservedAfterX; i++) {
+            invalidateCols.add(oldWidget.columns.length + i);
+          }
+        } else {
+          for (int i = 0; i < _reservedAfterX; i++) {
+            invalidateCols.add(widget.columns.length + i);
+          }
         }
       }
       if (invalidateRows.isNotEmpty || invalidateCols.isNotEmpty) {
@@ -135,10 +150,13 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
       headerHeight: widget.headerHeight,
       columnSizes: widget.columnSizes,
       padding: widget.padding,
+      hardPadding: widget.hardPadding,
       verticalDetails: widget.verticalDetails,
       horizontalDetails: widget.horizontalDetails,
       viewportController: viewportController,
+      selectedChecker: widget.selectedChecker,
       delegate: delegate,
+      relayoutListenable: widget.relayoutListenable,
     );
   }
 
@@ -149,6 +167,7 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
     headerBuilder: widget.headerBuilder,
     rowBackgroundBuilder: widget.rowBackgroundBuilder,
     headerBackgroundBuilder: widget.headerBackgroundBuilder,
+    selectionBuilder: widget.selectionBuilder,
     addRepaintBoundaries: widget.addRepaintBoundaries,
     invalidationNotifier: invalidationNotifier,
   );
@@ -161,7 +180,10 @@ class _TableView<R, C> extends TwoDimensionalScrollView {
   final double headerHeight;
   final List<double> columnSizes;
   final EdgeInsets padding;
+  final EdgeInsets hardPadding;
   final _RenderTableViewViewportController? viewportController;
+  final TableViewSelectedChecker<R>? selectedChecker;
+  final Listenable? relayoutListenable;
 
   const _TableView({
     required this.rows,
@@ -171,7 +193,10 @@ class _TableView<R, C> extends TwoDimensionalScrollView {
     required this.columnSizes,
     required super.delegate,
     this.padding = EdgeInsets.zero,
+    this.hardPadding = EdgeInsets.zero,
     this.viewportController,
+    this.selectedChecker,
+    this.relayoutListenable,
     super.verticalDetails,
     super.horizontalDetails,
   }) : assert(rowHeight > 0),
@@ -190,7 +215,10 @@ class _TableView<R, C> extends TwoDimensionalScrollView {
       headerHeight: headerHeight,
       columnSizes: columnSizes,
       padding: padding,
+      hardPadding: hardPadding,
       controller: viewportController,
+      selectedChecker: selectedChecker == null ? null : (rowIndex) => selectedChecker!(rows[rowIndex], rowIndex),
+      relayoutListenable: relayoutListenable,
     );
   }
 }
@@ -202,7 +230,10 @@ class _TableViewViewport extends TwoDimensionalViewport {
   final double headerHeight;
   final List<double> columnSizes;
   final EdgeInsets padding;
+  final EdgeInsets hardPadding;
   final _RenderTableViewViewportController? controller;
+  final bool Function(int rowIndex)? selectedChecker;
+  final Listenable? relayoutListenable;
 
   const _TableViewViewport({
     required super.verticalOffset,
@@ -214,8 +245,11 @@ class _TableViewViewport extends TwoDimensionalViewport {
     required this.rowHeight,
     required this.headerHeight,
     required this.columnSizes,
+    this.selectedChecker,
     this.padding = EdgeInsets.zero,
+    this.hardPadding = EdgeInsets.zero,
     this.controller,
+    this.relayoutListenable,
   }) : super(
          verticalAxisDirection: .down,
          horizontalAxisDirection: .right,
@@ -237,7 +271,10 @@ class _TableViewViewport extends TwoDimensionalViewport {
       headerHeight: headerHeight,
       columnSizes: columnSizes,
       padding: padding,
+      hardPadding: hardPadding,
       controller: controller,
+      selectedChecker: selectedChecker,
+      relayoutListenable: relayoutListenable,
     );
   }
 
@@ -258,7 +295,10 @@ class _TableViewViewport extends TwoDimensionalViewport {
       ..headerHeight = headerHeight
       ..columnSizes = columnSizes
       ..padding = padding
-      ..controller = controller;
+      ..hardPadding = hardPadding
+      ..controller = controller
+      ..selectedChecker = selectedChecker
+      ..relayoutListenable = relayoutListenable;
   }
 }
 
@@ -267,6 +307,8 @@ class _RenderTableViewViewportController {
 }
 
 class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
+  bool Function(int rowIndex)? selectedChecker;
+
   _RenderTableViewViewport({
     required super.horizontalOffset,
     required super.horizontalAxisDirection,
@@ -280,16 +322,22 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
     required double rowHeight,
     required double headerHeight,
     required List<double> columnSizes,
+    this.selectedChecker,
     EdgeInsets padding = EdgeInsets.zero,
+    EdgeInsets hardPadding = EdgeInsets.zero,
     _RenderTableViewViewportController? controller,
+    Listenable? relayoutListenable,
   }) : _rowCount = rowCount,
        _colCount = colCount,
        _rowHeight = rowHeight,
        _headerHeight = headerHeight,
        _columnSizes = columnSizes,
        _padding = padding,
-       _controller = controller {
+       _hardPadding = hardPadding,
+       _controller = controller,
+       _relayoutListenable = relayoutListenable {
     _setUpController();
+    _relayoutListenable?.addListener(markNeedsLayout);
   }
 
   int get rowCount => _rowCount;
@@ -340,11 +388,29 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
     markNeedsLayout();
   }
 
+  EdgeInsets get hardPadding => _hardPadding;
+  EdgeInsets _hardPadding;
+  set hardPadding(EdgeInsets value) {
+    if (_hardPadding == value) return;
+    _hardPadding = value;
+    markNeedsLayout();
+  }
+
   _RenderTableViewViewportController? get controller => _controller;
   _RenderTableViewViewportController? _controller;
   set controller(_RenderTableViewViewportController? value) {
     if (_controller == value) return;
     _controller = value;
+    _setUpController();
+  }
+
+  Listenable? get relayoutListenable => _relayoutListenable;
+  Listenable? _relayoutListenable;
+  set relayoutListenable(Listenable? value) {
+    if (_relayoutListenable == value) return;
+    _relayoutListenable?.removeListener(markNeedsLayout);
+    _relayoutListenable = value;
+    _relayoutListenable?.addListener(markNeedsLayout);
     _setUpController();
   }
 
@@ -359,12 +425,18 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
   late List<RenderBox> _hitTestOrderedChildren;
 
   @override
+  void dispose() {
+    super.dispose();
+    _relayoutListenable?.removeListener(markNeedsLayout);
+  }
+
+  @override
   void layoutChildSequence() {
     _hitTestOrderedChildren = [];
     final padding = this.padding + EdgeInsets.only(top: headerHeight);
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
-    final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal;
-    final maxHeight = rowHeight * rowCount + padding.vertical;
+    final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal + hardPadding.horizontal;
+    final maxHeight = rowHeight * rowCount + padding.vertical + hardPadding.horizontal;
     horizontalOffset.applyContentDimensions(0, (maxWidth - viewportDimension.width).coerceAtLeast(0));
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
@@ -373,7 +445,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       firstCol = 0;
       lastCol = -1;
     } else {
-      final renderStartX = (horizontalOffset.pixels - cacheExtent - padding.left).coerceAtLeast(0);
+      final renderStartX = (horizontalOffset.pixels - cacheExtent - padding.left - hardPadding.left).coerceAtLeast(0);
       final renderEndX = horizontalOffset.pixels + viewportDimension.width + cacheExtent;
       final firstFullyVisibleCol = columnOffsets.indexWhere((e) => e > renderStartX);
       firstCol = firstFullyVisibleCol == -1 ? colCount - 1 : (firstFullyVisibleCol - 1).coerceAtLeast(0);
@@ -386,7 +458,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       firstRow = 0;
       lastRow = -1;
     } else {
-      final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top).coerceAtLeast(0);
+      final renderStartY = (verticalOffset.pixels - cacheExtent - padding.top - hardPadding.left).coerceAtLeast(0);
       final renderEndY = verticalOffset.pixels + viewportDimension.height + cacheExtent;
       firstRow = (renderStartY / rowHeight).floor().clamp(0, rowCount - 1);
       lastRow = (renderEndY / rowHeight).ceil().clamp(0, rowCount - 1);
@@ -403,8 +475,8 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
         final headerParentData = header.parentData! as TwoDimensionalViewportParentData;
         header.layout(BoxConstraints.tight(Size(cellWidth, headerHeight)));
         headerParentData.layoutOffset = Offset(
-          padding.left + columnOffsets[col] - horizontalOffset.pixels,
-          this.padding.top,
+          padding.left + hardPadding.left + columnOffsets[col] - horizontalOffset.pixels,
+          this.padding.top + hardPadding.top,
         );
       }
     }
@@ -416,10 +488,10 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       _hitTestOrderedChildren.add(headerBackground);
       final headerBackgroundParentData = headerBackground.parentData! as TwoDimensionalViewportParentData;
       // TODO: 3 would it be better if we limit this to the viewport with instead of spanning over edges
-      headerBackground.layout(BoxConstraints.tight(Size(maxWidth, headerHeight)));
+      headerBackground.layout(BoxConstraints.tight(Size(maxWidth - hardPadding.horizontal, headerHeight)));
       headerBackgroundParentData.layoutOffset = Offset(
-        0,
-        this.padding.top,
+        hardPadding.left,
+        this.padding.top + hardPadding.top,
       );
     }
 
@@ -435,8 +507,8 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
           final parentData = child.parentData! as TwoDimensionalViewportParentData;
           child.layout(BoxConstraints.tight(Size(cellWidth, rowHeight)));
           parentData.layoutOffset = Offset(
-            padding.left + columnOffsets[col] - horizontalOffset.pixels,
-            padding.top + row * rowHeight - verticalOffset.pixels,
+            padding.left + hardPadding.left + columnOffsets[col] - horizontalOffset.pixels,
+            padding.top + hardPadding.top + row * rowHeight - verticalOffset.pixels,
           );
         }
       }
@@ -447,26 +519,42 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       if (rowBackground != null) {
         _hitTestOrderedChildren.add(rowBackground);
         final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
-        // TODO: 3 it probably looks better if we limit this to the viewport with instead of spanning over edges
-        rowBackground.layout(BoxConstraints.tight(Size(maxWidth, rowHeight)));
+        rowBackground.layout(BoxConstraints.tight(Size(maxWidth - hardPadding.horizontal, rowHeight)));
         rowBackgroundParentData.layoutOffset = Offset(
-          0,
-          padding.top + row * rowHeight - verticalOffset.pixels,
+          hardPadding.left - horizontalOffset.pixels,
+          padding.top + hardPadding.top + row * rowHeight - verticalOffset.pixels,
         );
       }
+    }
+
+    if (selectedChecker != null) {
       // // Layout selection indicator
-      // final selection = buildOrObtainChildFor(
-      //   SelectedRowChildVicinity(yIndex: row, extent: 0),
-      // );
-      // if (selection != null) {
-      //   final selectionParentData = selection.parentData! as TwoDimensionalViewportParentData;
-      //   // TODO: 3 it probably looks better if we limit this to the viewport with instead of spanning over edges
-      //   selection.layout(BoxConstraints.tight(Size(maxWidth, cellHeight)));
-      //   selectionParentData.layoutOffset = Offset(
-      //     0,
-      //     padding.top + row * cellHeight - verticalOffset.pixels,
-      //   );
-      // }
+      int? selectionStart;
+      for (int row = firstRow; row <= lastRow + 1; row++) {
+        final selected = row > lastRow ? false : selectedChecker!(row);
+        if (selected) {
+          selectionStart ??= row;
+          continue;
+        }
+        if (selectionStart == null) {
+          continue;
+        }
+        final vicinity = TableViewSelectedRowVicinity(yIndex: row - 1, extent: row - selectionStart);
+        final selection = buildOrObtainChildFor(vicinity);
+        if (selection != null) {
+          final selectionParentData = selection.parentData! as TwoDimensionalViewportParentData;
+          selection.layout(
+            BoxConstraints.tight(
+              Size(maxWidth - padding.horizontal - hardPadding.horizontal, rowHeight * vicinity.extent),
+            ),
+          );
+          selectionParentData.layoutOffset = Offset(
+            padding.left + hardPadding.left - horizontalOffset.pixels,
+            padding.top + hardPadding.top + selectionStart! * rowHeight - verticalOffset.pixels,
+          );
+        }
+        selectionStart = null;
+      }
     }
   }
 
@@ -590,7 +678,7 @@ sealed class TableViewSpecialVicinity extends TableViewVicinity {
 
 class TableViewSelectedRowVicinity extends TableViewVicinity {
   static const checker = TableViewSelectedRowVicinity(yIndex: 0, extent: 0);
-  static const beforeX = 0;
+  static const beforeX = 1;
 
   final int extent;
 
@@ -622,7 +710,7 @@ class TableViewHeaderChildVicinity extends TableViewVicinity {
 
 class TableViewRowBackgroundVicinity extends TableViewVicinity {
   static const checker = TableViewRowBackgroundVicinity(yIndex: 0);
-  static const beforeX = 1;
+  static const beforeX = 0;
 
   const TableViewRowBackgroundVicinity({
     required int yIndex,
@@ -652,10 +740,11 @@ class TableViewHeaderBackgroundVicinity extends TableViewVicinity {
 class _FilesChildDelegate<R, C> extends TwoDimensionalChildDelegate {
   List<R> rows;
   List<C> columns;
-  Widget? Function(BuildContext, R row, C column, int rowIndex, int colIndex) builder;
-  Widget? Function(BuildContext, C column, int colIndex)? headerBuilder;
-  Widget? Function(BuildContext, R row, int rowIndex)? rowBackgroundBuilder;
-  Widget? Function(BuildContext)? headerBackgroundBuilder;
+  TableViewChildBuilder<R, C> builder;
+  TableViewHeaderBuilder<C>? headerBuilder;
+  TableViewRowBackgroundBuilder<R>? rowBackgroundBuilder;
+  TableViewHeaderBackgroundBuilder? headerBackgroundBuilder;
+  TableViewSelectionBuilder? selectionBuilder;
   bool addRepaintBoundaries;
   ValueNotifier<_DataInvalidation> invalidationNotifier;
 
@@ -671,6 +760,7 @@ class _FilesChildDelegate<R, C> extends TwoDimensionalChildDelegate {
     this.headerBuilder,
     this.rowBackgroundBuilder,
     this.headerBackgroundBuilder,
+    this.selectionBuilder,
     this.addRepaintBoundaries = true,
   });
 
@@ -691,13 +781,13 @@ class _FilesChildDelegate<R, C> extends TwoDimensionalChildDelegate {
             return builder(context, rows[rowIndex], columns[colIndex], rowIndex, colIndex);
           }
           if (TableViewRowBackgroundVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
-            return rowBackgroundBuilder!(context, rows[rowIndex], rowIndex);
+            return rowBackgroundBuilder?.call(context, rows[rowIndex], rowIndex);
           }
           if (TableViewSelectedRowVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
-            return null; // TODO: 3 implement selection UI
+            return selectionBuilder?.call(context); // TODO: 3 implement selection UI
           }
           if (TableViewHeaderChildVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
-            return headerBuilder!(context, columns[colIndex], colIndex);
+            return headerBuilder?.call(context, columns[colIndex], colIndex);
           }
           if (TableViewHeaderBackgroundVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
             return headerBackgroundBuilder?.call(context);

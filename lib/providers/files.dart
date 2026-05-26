@@ -113,13 +113,13 @@ final sortedDirectoryList = ApiProviderFamily<List<FileData>, String>(
         }
         final result = List<FileData>.from(next.value!);
         print('PASS SORT $sort ${DateTime.now()}');
-        result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
+        result.sort((a, b) => a.compareTo(b, sort.field, asc: sort.asc));
         apiState.state = AsyncValue.data(result);
       });
       final list = await apiState.watch(directoryList.call(path));
       subscription.close();
       final result = List<FileData>.from(list);
-      result.sort((a, b) => a.compareTo(b, sort.$1, asc: sort.$2));
+      result.sort((a, b) => a.compareTo(b, sort.field, asc: sort.asc));
       print('PASS END SORT $sort ${DateTime.now()}');
       return result;
     },
