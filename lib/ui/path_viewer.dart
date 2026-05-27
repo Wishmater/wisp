@@ -199,11 +199,18 @@ class PathPartsView extends ConsumerWidget {
           hitTestBehavior: .translucent,
           controller: scrollController,
           reverse: true,
-          child: Row(
-            crossAxisAlignment: .center,
-            mainAxisSize: .min,
+          child: Stack(
             children: [
-              ...widgets,
+              Positioned.fill(
+                child: AbsorbPointer(),
+              ),
+              Row(
+                crossAxisAlignment: .center,
+                mainAxisSize: .min,
+                children: [
+                  ...widgets,
+                ],
+              ),
             ],
           ),
         ),
