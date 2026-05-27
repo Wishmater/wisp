@@ -199,14 +199,12 @@ class PathPartsView extends ConsumerWidget {
           hitTestBehavior: .translucent,
           controller: scrollController,
           reverse: true,
-          child: AbsorbPointer(
-            child: Row(
-              crossAxisAlignment: .center,
-              mainAxisSize: .min,
-              children: [
-                ...widgets,
-              ],
-            ),
+          child: Row(
+            crossAxisAlignment: .center,
+            mainAxisSize: .min,
+            children: [
+              ...widgets,
+            ],
           ),
         ),
       ),
@@ -239,6 +237,15 @@ class _PathTextFieldViewState extends ConsumerState<PathTextFieldView> {
     super.initState();
     _controller = widget.scrollController ?? ScrollController();
     _controller.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant PathTextFieldView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.scrollController != oldWidget.scrollController) {
+      oldWidget.scrollController?.removeListener(_onScroll);
+      widget.scrollController?.addListener(_onScroll);
+    }
   }
 
   @override
