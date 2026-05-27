@@ -1,7 +1,7 @@
 import 'package:fast_copy/fast_copy.dart';
 import 'package:native_file/native_file.dart';
 
-class CopyFileRange implements ICopy {
+class CopyFileRange extends ICopy {
   final int blockSizeMultipier;
 
   CopyFileRange([this.blockSizeMultipier = 1024]);

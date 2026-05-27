@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:fast_copy/src/copy.dart';
 import 'package:fast_copy/src/operation.dart';
 
-class UserlandReadWriteCopy implements ICopy {
+class UserlandReadWriteCopy extends ICopy {
   @override
   Future<void> copyFile(FileCopyOperation operation) async {
     final preferedBlockSize = operation.source.stat.preferedIOSize;

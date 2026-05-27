@@ -13,12 +13,7 @@ Future<void> main(List<String> args) async {
       allowed: ['simple', 'file_range', 'failing'],
       help: 'Copy strategy to use.',
     )
-    ..addFlag(
-      'help',
-      abbr: 'h',
-      negatable: false,
-      help: 'Show usage.',
-    );
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage.');
 
   final results = parser.parse(args);
 
@@ -59,7 +54,7 @@ Future<void> main(List<String> args) async {
   final runner = await IsolateCopyRunner.spawn();
   final start = DateTime.now();
 
-  await runner.startCopy(copier, srcPath, destPath);
+  await runner.startCopy(copier, [DirectorySource(path: srcPath)], destPath);
 
   const frameDuration = Duration(microseconds: 16667); // 60 fps
   while (true) {

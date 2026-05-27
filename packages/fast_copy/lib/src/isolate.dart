@@ -47,12 +47,12 @@ class IsolateCopyRunner {
 
   Future<void> startCopy(
     ICopy copier,
-    String sourcePath,
+    List<CopySource> sources,
     String destPath, [
     bool paused = false,
   ]) async {
     await _request(
-      _StartCopyRequest(copier: copier, sourcePath: sourcePath, destPath: destPath, paused: paused),
+      _StartCopyRequest(copier: copier, sources: sources, destPath: destPath, paused: paused),
     );
     return;
   }
@@ -94,13 +94,14 @@ void _workerEntry(SendPort mainSendPort) {
 
   workerPort.listen((msg) {
     switch (msg as _Request) {
-      case _StartCopyRequest(:final id, :final copier, :final sourcePath, :final destPath, :final paused):
-        currentOp = CopyOperation(
-          DirectorySource(path: sourcePath),
-          destPath,
-          copier,
-          paused,
-        );
+      case _StartCopyRequest(
+        :final id,
+        :final copier,
+        :final sources,
+        :final destPath,
+        :final paused,
+      ):
+        currentOp = CopyOperation(sources, destPath, copier, paused);
         mainSendPort.send(_StartCopyResponse(id));
       case _PauseRequest(:final id):
         currentOp!.pause();
@@ -123,14 +124,14 @@ sealed class _Request {
 }
 
 class _StartCopyRequest extends _Request {
-  final String sourcePath;
+  final List<CopySource> sources;
   final String destPath;
   final ICopy copier;
   final bool paused;
 
   _StartCopyRequest({
     required this.copier,
-    required this.sourcePath,
+    required this.sources,
     required this.destPath,
     required this.paused,
   });

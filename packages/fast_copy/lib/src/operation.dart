@@ -7,7 +7,7 @@ import 'package:fast_copy/src/types.dart';
 class CopyOperation {
   CopyState state;
 
-  CopySource source;
+  List<CopySource> sources;
 
   String dest;
 
@@ -17,7 +17,7 @@ class CopyOperation {
 
   Completer<bool> _waitPaused;
 
-  CopyOperation(this.source, this.dest, this.manager, [bool paused = false])
+  CopyOperation(this.sources, this.dest, this.manager, [bool paused = false])
     : state = CopyState.pending(totalBytes: 0, totalFiles: 0),
       _actives = [],
       _waitPaused = Completer() {
@@ -31,6 +31,15 @@ class CopyOperation {
     await _init().timeout(Duration(seconds: 1), onTimeout: () {});
     state = (state as CopyPending).toActive();
 
+    for (final source in sources) {
+      await _performCopy(source, paused);
+      paused = false;
+    }
+
+    state = (state as CopyActive).toDone();
+  }
+
+  Future<void> _performCopy(CopySource source, bool paused) async {
     switch (source) {
       case FileSource source:
         final fileCopy = FileCopyOperation(
@@ -47,76 +56,84 @@ class CopyOperation {
           final relativePath = entry.path.substring(source.path.length + 1);
           final destinationPath = '$dest/$relativePath';
 
-          if (entry is Directory) {
-            _createDirectory(destinationPath);
-            continue;
-          }
+          switch (entry) {
+            case Directory():
+              try {
+                manager.makeDirectorySync(destinationPath);
+              } catch (e) {
+                (state as CopyActive).failures.add(
+                  FileFailure(sourcePath: entry.path, destPath: destinationPath, error: e),
+                );
+              }
+            case Link():
+              try {
+                manager.makeLinkSync(entry, destinationPath);
+              } catch (e) {
+                (state as CopyActive).failures.add(
+                  FileFailure(sourcePath: entry.path, destPath: destinationPath, error: e),
+                );
+              }
+            case File file:
+              assert(() {
+                if (!File(destinationPath).parent.existsSync()) {
+                  return false;
+                }
+                return true;
+              }(), "${entry.parent} does not exists");
 
-          if (entry is Link) {
-            _copyLink(entry, destinationPath);
-            continue;
-          }
-          final file = (entry as File);
+              final fileStat = file.statSync();
+              final fFileStat = FFileStat(
+                mode: fileStat.mode,
+                byteSize: fileStat.size,
+                preferedIOSize: 4096,
+                change: fileStat.changed,
+                access: fileStat.accessed,
+                modification: fileStat.modified,
+              );
 
-          assert(() {
-            if (!File(destinationPath).parent.existsSync()) {
-              return false;
-            }
-            return true;
-          }(), "${entry.parent} does not exists");
-
-          final fileStat = file.statSync();
-          final fFileStat = FFileStat(
-            mode: fileStat.mode,
-            byteSize: fileStat.size,
-            preferedIOSize: 4096,
-            change: fileStat.changed,
-            access: fileStat.accessed,
-            modification: fileStat.modified,
-          );
-
-          final fileCopy = FileCopyOperation(
-            paused: paused,
-            source: FileSource(path: file.path, stat: fFileStat),
-            dest: destinationPath,
-            parent: this,
-          );
-          _actives.add(fileCopy);
-          try {
-            await manager.copyFile(fileCopy);
-          } catch (e) {
-            _actives.remove(fileCopy);
-            (state as CopyActive).failures.add(
-              FileFailure(sourcePath: file.path, destPath: destinationPath, error: e),
-            );
+              final fileCopy = FileCopyOperation(
+                paused: paused,
+                source: FileSource(path: file.path, stat: fFileStat),
+                dest: destinationPath,
+                parent: this,
+              );
+              _actives.add(fileCopy);
+              try {
+                await manager.copyFile(fileCopy);
+              } catch (e) {
+                _actives.remove(fileCopy);
+                (state as CopyActive).failures.add(
+                  FileFailure(sourcePath: file.path, destPath: destinationPath, error: e),
+                );
+              }
           }
         }
     }
-
-    state = (state as CopyActive).toDone();
   }
 
   Future<void> _init() async {
-    switch (source) {
-      case FileSource source:
-        final stat = File(source.path).statSync();
-        state.totalBytes += stat.size;
-        state.totalFiles = 1;
-      case DirectorySource source:
-        final dir = Directory(source.path);
-        await for (final entry in dir.list(followLinks: false, recursive: true)) {
-          if (entry is Directory) {
-            continue;
-          }
-          if (entry is Link) {
-            state.totalFiles += 1;
-            continue;
-          }
-          final file = (entry as File);
-          final stat = file.statSync();
+    for (final source in sources) {
+      switch (source) {
+        case FileSource source:
+          final stat = File(source.path).statSync();
           state.totalBytes += stat.size;
           state.totalFiles += 1;
-        }
+        case DirectorySource source:
+          final dir = Directory(source.path);
+          await for (final entry in dir.list(followLinks: false, recursive: true)) {
+            if (entry is Directory) {
+              continue;
+            }
+            if (entry is Link) {
+              state.totalFiles += 1;
+              continue;
+            }
+            final file = (entry as File);
+            final stat = file.statSync();
+            state.totalBytes += stat.size;
+            state.totalFiles += 1;
+          }
+      }
     }
   }
 
@@ -189,15 +206,4 @@ class FCOEventCopied extends FCOEvent {
 
 class FCOEventFinish extends FCOEvent {
   const FCOEventFinish();
-}
-
-void _copyLink(Link source, String dest) {
-  final target = source.targetSync();
-  try {
-    Link(dest).createSync(target);
-  } catch (_) {}
-}
-
-void _createDirectory(String dest) {
-  Directory(dest).createSync(recursive: true);
 }
