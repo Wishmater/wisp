@@ -214,7 +214,7 @@ class PathPartsView extends ConsumerWidget {
   }
 }
 
-class PathTextFieldView extends ConsumerWidget {
+class PathTextFieldView extends ConsumerStatefulWidget {
   final String path;
   final FocusNode? focusNode;
   final ScrollController? scrollController;
@@ -227,36 +227,78 @@ class PathTextFieldView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scrollController = this.scrollController ?? ScrollController();
+  ConsumerState<PathTextFieldView> createState() => _PathTextFieldViewState();
+}
+
+class _PathTextFieldViewState extends ConsumerState<PathTextFieldView> {
+  double _pixelsFromEnd = 0;
+  late final ScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.scrollController ?? ScrollController();
+    _controller.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onScroll);
+    if (widget.scrollController == null) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_controller.hasClients) {
+      _pixelsFromEnd = _controller.position.maxScrollExtent - _controller.position.pixels;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.bodyMedium;
     final textPainter = TextPainter(
-      text: TextSpan(text: path, style: style!.copyWith(height: 1)),
+      text: TextSpan(text: widget.path, style: style!.copyWith(height: 1)),
       textDirection: ui.TextDirection.ltr,
       textScaler: MediaQuery.of(context).textScaler,
     )..layout();
-    return ScrollOpacityGradient(
-      scrollController: scrollController,
-      direction: OpacityGradient.horizontal,
-      child: TextFormField(
-        scrollController: scrollController,
-        focusNode: focusNode,
-        initialValue: path,
-        maxLines: 1,
-        style: style,
-        textAlignVertical: TextAlignVertical.top,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.only(
-            left: 6,
-            top: (ref.watch(appbarHeight) - textPainter.height) / 2 + 1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // hack to make textfield scroll behave kinda like ListView with reverse=true
+          if (_controller.hasClients) {
+            final max = _controller.position.maxScrollExtent;
+            final newPixels = (max - _pixelsFromEnd).clamp(0.0, max);
+            _controller.jumpTo(newPixels);
+          }
+        });
+        return ScrollOpacityGradient(
+          scrollController: _controller,
+          direction: OpacityGradient.horizontal,
+          child: TextFormField(
+            scrollController: _controller,
+            focusNode: widget.focusNode,
+            initialValue: widget.path,
+            maxLines: 1,
+            style: style,
+            textAlignVertical: TextAlignVertical.top,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.only(
+                left: 6,
+                right: 42,
+                top: (ref.watch(appbarHeight) - textPainter.height) / 2 + 1,
+              ),
+            ),
+            onFieldSubmitted: (value) {
+              ref.read(currentDirectory.notifier).setCurrentDirectory(value);
+            },
           ),
-          isDense: true,
-        ),
-        onFieldSubmitted: (value) {
-          ref.read(currentDirectory.notifier).setCurrentDirectory(value);
-        },
-      ),
+        );
+      },
     );
   }
 }
