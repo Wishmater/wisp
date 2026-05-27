@@ -1,8 +1,12 @@
+import 'dart:ui' as ui;
+
 import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:from_zero_ui/from_zero_ui.dart';
 import 'package:wisp/providers/explorer.dart';
+import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/widgets/gestures.dart';
 
 class PathViewer extends ConsumerStatefulWidget {
@@ -13,60 +17,140 @@ class PathViewer extends ConsumerStatefulWidget {
 }
 
 class _PathViewerState extends ConsumerState<PathViewer> {
+  late final textfieldScrollController = ScrollController();
+  late final pathviewerScrollController = ScrollController();
+  late final FocusNode textFieldFocusNode;
   bool showingTextField = false;
+  bool queueScrollbarUpdate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    textFieldFocusNode = FocusNode();
+    textFieldFocusNode.addListener(showTextField);
+  }
+
+  void showTextField() {
+    if (!textFieldFocusNode.hasFocus) return;
+    if (!showingTextField) {
+      setState(() {
+        showingTextField = true;
+        queueScrollbarUpdate = true;
+      });
+    }
+  }
+
+  void showPathViewer() {
+    if (showingTextField) {
+      setState(() {
+        showingTextField = false;
+        queueScrollbarUpdate = true;
+        textFieldFocusNode.unfocus();
+        // TODO: 2 should we reset the text on the textfield when pressing escape? (Dolphin does it, Nautilus does not)
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final currentDirectoryValue = ref.watch(currentDirectory);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Opacity(
-          opacity: showingTextField ? 1 : 0,
-          child: CallbackShortcuts(
-            bindings: {
-              ModifierIgnoringActivator(LogicalKeyboardKey.escape): () {
-                if (showingTextField) {
-                  setState(() {
-                    showingTextField = false;
-                  });
-                }
-              },
-            },
-            child: GestureDetector(
-              onTap: () {
-                if (!showingTextField) {
-                  setState(() {
-                    showingTextField = true;
-                  });
-                }
-              },
-              child: PathTextfieldView(
-                key: ValueKey(currentDirectoryValue),
-                path: currentDirectoryValue,
-              ),
-            ),
-          ),
+    final scrollController = showingTextField ? textfieldScrollController : pathviewerScrollController;
+    return Padding(
+      padding: EdgeInsets.only(left: 15),
+      child: ScrollbarFromZero(
+        controller: scrollController,
+        applyOpacityGradientToChildren: false,
+        child: Builder(
+          builder: (context) {
+            if (queueScrollbarUpdate) {
+              queueScrollbarUpdate = false;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                // Force the scrollbar to update, otherwise it's stuck with the size of the previous widget
+                context.dispatchNotification(
+                  ScrollMetricsNotification(
+                    context: context,
+                    metrics: FixedScrollMetrics(
+                      minScrollExtent: scrollController.position.minScrollExtent,
+                      maxScrollExtent: scrollController.position.maxScrollExtent,
+                      pixels: scrollController.position.pixels,
+                      viewportDimension: scrollController.position.viewportDimension,
+                      axisDirection: scrollController.position.axisDirection,
+                      devicePixelRatio: scrollController.position.devicePixelRatio,
+                    ),
+                  ),
+                );
+              });
+            }
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                NotificationListener(
+                  onNotification: (notification) {
+                    return !showingTextField &&
+                        (notification is ScrollNotification || notification is ScrollMetricsNotification);
+                  },
+                  child: ExcludeFocusTraversal(
+                    excluding: !showingTextField,
+                    child: Opacity(
+                      opacity: showingTextField ? 1 : 0,
+                      child: CallbackShortcuts(
+                        bindings: {
+                          ModifierIgnoringActivator(LogicalKeyboardKey.escape): showPathViewer,
+                        },
+                        child: PathTextFieldView(
+                          key: ValueKey(currentDirectoryValue),
+                          focusNode: textFieldFocusNode,
+                          path: currentDirectoryValue,
+                          scrollController: textfieldScrollController,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                NotificationListener(
+                  onNotification: (notification) {
+                    return showingTextField &&
+                        (notification is ScrollNotification || notification is ScrollMetricsNotification);
+                  },
+                  child: ExcludeFocusTraversal(
+                    excluding: showingTextField,
+                    child: ExcludeFocus(
+                      excluding: showingTextField,
+                      child: IgnorePointer(
+                        ignoring: showingTextField,
+                        child: Opacity(
+                          opacity: showingTextField ? 0 : 1,
+                          child: PathPartsView(
+                            path: currentDirectoryValue,
+                            scrollController: pathviewerScrollController,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-        Opacity(
-          opacity: showingTextField ? 0 : 1,
-          child: PathPartsView(path: currentDirectoryValue),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class PathPartsView extends ConsumerWidget {
   final String path;
+  final ScrollController? scrollController;
 
   const PathPartsView({
     required this.path,
+    this.scrollController,
     super.key,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = this.scrollController ?? ScrollController();
     final splitPath = path.split('/')..removeWhere((e) => e.isEmpty);
     if (path.startsWith('/')) {
       splitPath.insert(0, '/');
@@ -78,7 +162,9 @@ class PathPartsView extends ConsumerWidget {
         InkWell(
           borderRadius: BorderRadius.all(Radius.circular(6)),
           onTap: () {
-            final fullPath = splitPath.sublist(0, i + 1).join('/');
+            var fullPath = splitPath
+                .sublist(0, i + 1) //
+                .fold('', (value, e) => value == '/' || e == '/' ? value + e : '$value/$e');
             ref.read(currentDirectory.notifier).setCurrentDirectory(fullPath);
           },
           child: Padding(
@@ -101,36 +187,76 @@ class PathPartsView extends ConsumerWidget {
           ),
       ]);
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: .center,
-        children: [
-          SizedBox(width: 15),
-          ...widgets,
-          SizedBox(width: 12),
-        ],
+    return Container(
+      // Leave this space so you can always click it and go int TextField mode
+      padding: const EdgeInsets.only(right: 48),
+      alignment: Alignment.centerLeft,
+      child: ScrollOpacityGradient(
+        scrollController: scrollController,
+        direction: OpacityGradient.horizontal,
+        child: SingleChildScrollView(
+          scrollDirection: .horizontal,
+          hitTestBehavior: .translucent,
+          controller: scrollController,
+          reverse: true,
+          child: AbsorbPointer(
+            child: Row(
+              crossAxisAlignment: .center,
+              mainAxisSize: .min,
+              children: [
+                ...widgets,
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class PathTextfieldView extends ConsumerWidget {
+class PathTextFieldView extends ConsumerWidget {
   final String path;
+  final FocusNode? focusNode;
+  final ScrollController? scrollController;
 
-  const PathTextfieldView({
+  const PathTextFieldView({
     required this.path,
+    this.focusNode,
+    this.scrollController,
     super.key,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return TextFormField(
-      autofocus: true,
-      initialValue: path,
-      onFieldSubmitted: (value) {
-        ref.read(currentDirectory.notifier).setCurrentDirectory(value);
-      },
+    final scrollController = this.scrollController ?? ScrollController();
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final textPainter = TextPainter(
+      text: TextSpan(text: path, style: style!.copyWith(height: 1)),
+      textDirection: ui.TextDirection.ltr,
+      textScaler: MediaQuery.of(context).textScaler,
+    )..layout();
+    return ScrollOpacityGradient(
+      scrollController: scrollController,
+      direction: OpacityGradient.horizontal,
+      child: TextFormField(
+        scrollController: scrollController,
+        focusNode: focusNode,
+        initialValue: path,
+        maxLines: 1,
+        style: style,
+        textAlignVertical: TextAlignVertical.top,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.only(
+            left: 6,
+            top: (ref.watch(appbarHeight) - textPainter.height) / 2 + 1,
+          ),
+          isDense: true,
+        ),
+        onFieldSubmitted: (value) {
+          ref.read(currentDirectory.notifier).setCurrentDirectory(value);
+        },
+      ),
     );
   }
 }

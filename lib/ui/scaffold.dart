@@ -23,6 +23,13 @@ class ExplorerScaffold extends ConsumerWidget {
           top: 0,
           height: appbarHeightValue,
           child: const ExplorerAppbar(),
+          // TODO: 2 experiment with blur, hard to do on table header
+          // child: ClipRect(
+          //   child: BackdropFilter(
+          //     filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+          //     child: const ExplorerAppbar(),
+          //   ),
+          // ),
         ),
         Positioned(
           left: 0,
@@ -30,6 +37,13 @@ class ExplorerScaffold extends ConsumerWidget {
           top: appbarHeightValue,
           width: drawerWidthValue,
           child: const ExplorerDrawer(),
+          // TODO: 2 experiment with blur, hard to do on table header
+          // child: ClipRect(
+          //   child: BackdropFilter(
+          //     filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+          //     child: const ExplorerDrawer(),
+          //   ),
+          // ),
         ),
       ],
     );

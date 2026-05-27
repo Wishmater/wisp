@@ -33,6 +33,9 @@ class CurrentDirectoryNotifier extends Notifier<String> {
   }
 
   void setCurrentDirectory(String path) {
+    if (!path.endsWith('/')) {
+      path += '/';
+    }
     state = path;
   }
 }
