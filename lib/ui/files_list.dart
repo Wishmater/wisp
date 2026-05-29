@@ -12,13 +12,19 @@ import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/widgets/gestures.dart';
 import 'package:wisp/widgets/table_view.dart';
 
-class FilesList extends ConsumerWidget {
+class FilesList extends ConsumerStatefulWidget {
   const FilesList({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final verticalController = ScrollController();
-    final horizontalController = ScrollController();
+  ConsumerState<FilesList> createState() => _FilesListState();
+}
+
+class _FilesListState extends ConsumerState<FilesList> {
+  late final verticalController = ScrollController();
+  late final horizontalController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
     // PERF: 2 listening to the whole media query is expensive, so make sure this rebuilds the least amount of widgets possible
     final mediaQuery = MediaQuery.of(context);
     final appbarHeightValue = ref.watch(appbarHeight);
@@ -35,7 +41,7 @@ class FilesList extends ConsumerWidget {
             padding:
                 mediaQuery.padding +
                 EdgeInsets.only(
-                  top: appbarHeightValue,
+                  top: appbarHeightValue + _FilesTable.headerHeight,
                   left: drawerWidthValue,
                 ),
           ),
@@ -50,7 +56,7 @@ class FilesList extends ConsumerWidget {
                 direction: OpacityGradient.vertical,
                 scrollController: verticalController,
                 child: _FilesTable(
-                  data: files.value ?? [],
+                  data: files ?? [],
                   horizontalController: horizontalController,
                   verticalController: verticalController,
                 ),
@@ -58,10 +64,10 @@ class FilesList extends ConsumerWidget {
             ),
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: filesNotifier.wholePercentageNotifier,
-          builder: (context, progress, _) {
-            if (progress == 1) {
+        Consumer(
+          builder: (context, ref, _) {
+            final progress = ref.watch(filesNotifier.wholeProgress);
+            if (progress.progress == 1) {
               return SizedBox.shrink();
             }
             return Positioned(
@@ -70,7 +76,7 @@ class FilesList extends ConsumerWidget {
               top: appbarHeightValue,
               // TODO: 3 make better progressIndicator that maybe uses motor to smoothly change the value
               child: LinearProgressIndicator(
-                value: progress,
+                value: progress.progress,
               ),
             );
           },
@@ -85,6 +91,8 @@ class _FilesTable extends ConsumerWidget {
   final ScrollController? horizontalController;
   final ScrollController? verticalController;
 
+  static const rowHeight = 36.0;
+  static const headerHeight = 30.0;
   static const columns = <FileDataField>[.filename, .size, .type, .modified];
   static const columnSizes = <double>[512, 128, 128, 256];
   static const padding = EdgeInsets.only(
@@ -134,8 +142,8 @@ class _FilesTable extends ConsumerWidget {
           rows: data,
           columns: columns,
           columnSizes: columnSizes,
-          rowHeight: 36,
-          headerHeight: 30,
+          rowHeight: headerHeight,
+          headerHeight: rowHeight,
           horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
           verticalDetails: ScrollableDetails.vertical(controller: verticalController),
           relayoutListenable: relayoutListener,
