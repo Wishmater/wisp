@@ -111,10 +111,8 @@ final sortedDirectoryList = FzStreamProviderFamily<List<FileData>?, String>(
         if (files == null) continue;
         final result = List<FileData>.from(files);
         result.sort((a, b) => a.compareTo(b, sort.field, asc: sort.asc));
-        print('PASS SORT $sort ${DateTime.now()}');
         yield result;
       }
-      print('PASS END SORT $sort ${DateTime.now()}');
       apiState.ref.addDisposeDelay(disposeDelay);
     },
   ),

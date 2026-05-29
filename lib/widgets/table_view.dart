@@ -126,7 +126,7 @@ class _TableViewState<R, C> extends State<TableView<R, C>> {
         }
       }
       if (invalidateRows.isNotEmpty || invalidateCols.isNotEmpty) {
-        print('INVALIDATE rows=$invalidateRows ;; cols=$invalidateCols');
+        // print('INVALIDATE rows=$invalidateRows ;; cols=$invalidateCols');
         invalidationNotifier.value = _DataInvalidation(
           rows: invalidateRows,
           cols: invalidateCols,

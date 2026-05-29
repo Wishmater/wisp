@@ -26,7 +26,7 @@ dependencies:
     # path: ../from_zero_ui/
     git:
       url: https://github.com/FromZeroDev/from_zero_ui
-      ref: dev
+      ref: fz_notifier
 
 dev_dependencies:
   flutter_test:
