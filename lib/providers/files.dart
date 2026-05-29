@@ -87,7 +87,7 @@ final directoryList = FzStreamProviderFamily<Iterable<FileData>?, String>(
             for (final e in update.specialDataUpdates) {
               result[e.path]!.specialData = e.data;
             }
-            progressNotifier.setValues(update.totalCount?.toDouble(), update.totalProcessedCount.toDouble());
+            progressNotifier.setValues(update.totalProcessedCount.toDouble(), update.totalCount?.toDouble());
         }
         print(
           'Provider received message ${iteration++} after ${stopwatch.elapsed}:'
