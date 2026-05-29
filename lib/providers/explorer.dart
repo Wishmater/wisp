@@ -24,7 +24,7 @@ final fileSelection = NotifierProvider.family<FileSelectionNotifier, FileSelecti
 class CurrentDirectoryNotifier extends Notifier<String> {
   @override
   String build() {
-    return File('').absolute.path; // TODO: 1 this should probably come from args
+    // return File('').absolute.path; // TODO: 1 this should probably come from args
     return '/nix/var/nix/profiles/';
   }
 
@@ -128,8 +128,7 @@ class FileSelectionNotifier extends Notifier<FileSelection> {
     isControlPressed ??= HardwareKeyboard.instance.isControlPressed;
     isShiftPressed ??= HardwareKeyboard.instance.isShiftPressed;
     isAltPressed ??= HardwareKeyboard.instance.isAltPressed;
-    final listValue = ref.read(sortedDirectoryList.call(directoryPath));
-    final list = listValue.asData?.value;
+    final list = ref.read(sortedDirectoryList.call(directoryPath));
     if (list == null) return;
     final focusedPath = state.focusedPath;
     final selectedPaths = state.selectedPaths;
@@ -188,8 +187,7 @@ class FileSelectionNotifier extends Notifier<FileSelection> {
     // It's weird that shift takes priority over ctrl here and it's the other way around
     // when moving with arrows, but that's how both Dolphin and Nautilus work.
     if (HardwareKeyboard.instance.isShiftPressed) {
-      final listValue = ref.read(sortedDirectoryList.call(directoryPath));
-      final list = listValue.asData?.value;
+      final list = ref.read(sortedDirectoryList.call(directoryPath));
       if (list == null) return; // this shouldn't happen
       final initialIndex = initialFocusedPath == null
           ? 0
