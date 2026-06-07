@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/services/disk_type.dart';
 import 'package:wisp/services/xdg_mime.dart';
@@ -14,10 +15,12 @@ final dirReader = HddAwareDirReader(
   hddReader: IsolateDirReader(PileAwaitDirReader()),
 );
 
+class DirReaderSettings {}
+
 sealed class DirReader {
   Future<void> init() async {}
 
-  Stream<DirReaderMessage> readDir(Directory directory);
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings);
 }
 
 sealed class DirReaderMessage {}
@@ -25,6 +28,12 @@ sealed class DirReaderMessage {}
 class SingleFileData extends DirReaderMessage {
   final FileData data;
   SingleFileData(this.data);
+}
+
+class DirReaderError extends DirReaderMessage {
+  final Object error;
+
+  DirReaderError(this.error);
 }
 
 class FilesListDone extends DirReaderMessage {}
@@ -76,7 +85,7 @@ class FullUpdate extends DirReaderMessage {
 @visibleForTesting
 class SimpleDirReader extends DirReader {
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) async* {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) async* {
     await for (final e in directory.list(followLinks: false)) {
       final path = e.absolute.path;
       yield SingleFileData(FileData(path: path));
@@ -98,9 +107,22 @@ class SimpleDirReader extends DirReader {
 @visibleForTesting
 class SyncDirReader extends DirReader {
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) async* {
-    for (final e in directory.listSync(followLinks: false)) {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) async* {
+    List<FileSystemEntity> entries;
+    try {
+      entries = directory.listSync(followLinks: false);
+    } catch(e) {
+      yield DirReaderError(e);
+      return;
+    }
+
+    for (final e in entries) {
       final path = e.absolute.path;
+
+      print("AAAA ${p.basename(path)} ${p.basename(path).startsWith(".")}");
+      if (p.basename(path).startsWith(".")) {
+        continue;
+      }
       // await Future.delayed(Duration(milliseconds: 10));
       yield SingleFileData(FileData(path: path));
       final stat = e.statSync();
@@ -124,7 +146,7 @@ class SyncDirReader extends DirReader {
 @visibleForTesting
 class PileAwaitDirReader extends DirReader {
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) {
     final response = StreamController<DirReaderMessage>();
     final list = directory.list(followLinks: false);
     final futures = <Future<void>>[];
@@ -132,6 +154,9 @@ class PileAwaitDirReader extends DirReader {
     list.listen(
       (e) {
         final path = e.absolute.path;
+        if (p.basename(path).startsWith(".")) {
+          return;
+        }
         response.add(SingleFileData(FileData(path: path)));
         futures.add(() async {
           final stat = await e.stat();
@@ -174,11 +199,13 @@ class _DirReaderIsolateEnd extends _DirReaderIsolateMessage {}
 class _IsolateStartData {
   final Directory directory;
   final DirReader reader;
+  DirReaderSettings settings;
   final SendPort port;
   final int batchSize;
   _IsolateStartData({
     required this.directory,
     required this.reader,
+    required this.settings,
     required this.port,
     required this.batchSize,
   });
@@ -197,13 +224,14 @@ class IsolateDirReader extends DirReader {
   late final SendPort _sp;
 
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) {
     final rp = ReceivePort();
     final completer = Completer<bool>();
     _sp.send(
       _IsolateStartData(
         directory: directory,
         reader: reader,
+        settings: settings,
         port: rp.sendPort,
         batchSize: batchSize,
       ),
@@ -259,7 +287,7 @@ class IsolateDirReader extends DirReader {
       List<SingleStatData> tempStatData = [];
       List<SingleTypeData> tempTypeData = [];
       List<SingleSpecialData> tempSpecialData = [];
-      await for (final message in params.reader.readDir(params.directory)) {
+      await for (final message in params.reader.readDir(params.directory, params.settings)) {
         switch (message) {
           case SingleFileData(:final data):
             fileCount++;
@@ -316,6 +344,9 @@ class IsolateDirReader extends DirReader {
                 tempSpecialData.add(e);
               }
             }
+          case DirReaderError(:final error):
+            print("$error");
+            filesDone = true;
         }
         if ((fileCount + statCount + typeCount + specialCount) % params.batchSize == 0) {
           params.port.send(
@@ -368,10 +399,10 @@ class ComputeDirReader extends DirReader {
   ComputeDirReader(this.reader);
 
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) async* {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) async* {
     yield await compute((directory) async {
       final result = <String, FileData>{};
-      await for (final message in reader.readDir(directory)) {
+      await for (final message in reader.readDir(directory, settings)) {
         switch (message) {
           case SingleFileData(:final data):
             result[data.path] = data;
@@ -395,6 +426,9 @@ class ComputeDirReader extends DirReader {
               result[e.path]!.specialData = e.data;
             }
           case FilesListDone():
+          case DirReaderError():
+            // TODO: Handle this case.
+            throw UnimplementedError();
         }
       }
       return FullUpdate(
@@ -432,11 +466,11 @@ class HddAwareDirReader extends DirReader {
   }
 
   @override
-  Stream<DirReaderMessage> readDir(Directory directory) {
+  Stream<DirReaderMessage> readDir(Directory directory, DirReaderSettings settings) {
     if (diskType.isRotational(directory.absolute.path)) {
-      return hddReader.readDir(directory);
+      return hddReader.readDir(directory, settings);
     } else {
-      return ssdReader.readDir(directory);
+      return ssdReader.readDir(directory, settings);
     }
   }
 }

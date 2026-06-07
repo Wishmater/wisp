@@ -1,6 +1,6 @@
 name: wisp
 description: "Modern File Manager"
-publish_to: 'none'
+publish_to: "none"
 version: 0.0.1+1
 
 environment:
@@ -21,6 +21,7 @@ dependencies:
   xdg_mime:
     git:
       url: https://github.com/ross96D/xdg-mime.dart
+      ref: 83a09c1729dbc013780410bc2f1753922db3efbb
 
   from_zero_ui:
     # path: ../from_zero_ui/

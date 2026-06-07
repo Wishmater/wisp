@@ -254,8 +254,8 @@ packages:
     dependency: transitive
     description:
       path: "pkgs/desktop_entry"
-      ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"
@@ -444,8 +444,8 @@ packages:
     dependency: transitive
     description:
       path: "pkgs/freedesktop_file_parser"
-      ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"
@@ -1403,8 +1403,8 @@ packages:
     dependency: transitive
     description:
       path: "pkgs/result"
-      ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"
@@ -1810,8 +1810,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"
@@ -1819,8 +1819,8 @@ packages:
     dependency: transitive
     description:
       path: "pkgs/mime_apps"
-      ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"
@@ -1828,8 +1828,8 @@ packages:
     dependency: transitive
     description:
       path: "pkgs/mime_db"
-      ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
-      resolved-ref: "3f58f4722517741743954ce5d2a9ccee6bf0ae47"
+      ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
+      resolved-ref: "83a09c1729dbc013780410bc2f1753922db3efbb"
       url: "https://github.com/ross96D/xdg-mime.dart"
     source: git
     version: "1.0.0"

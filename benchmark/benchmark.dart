@@ -62,7 +62,7 @@ void main() {
         await entry.value.init();
       }
       for (final entry in readers.entries) {
-        await entry.value.readDir(dir).drain();
+        await entry.value.readDir(dir, DirReaderSettings()).drain();
       }
 
       print('Running $iterations passes...\n');
@@ -78,7 +78,7 @@ void main() {
 
           sw.reset();
           sw.start();
-          final files = await reader.readDir(dir).toList();
+          final files = await reader.readDir(dir, DirReaderSettings()).toList();
           sw.stop();
 
           allResults.putIfAbsent(name, () => []).add(sw.elapsed);
