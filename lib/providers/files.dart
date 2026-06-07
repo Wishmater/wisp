@@ -19,11 +19,11 @@ bool openFile(FileData fileData) {
     // print("Empty mime type");
     return false;
   }
-  List<String> defaults = XdgMimeApps.defaults(mimeType);
+  List<String> defaults = XdgMimeApps.defaults(mimeType, desktopEntries: desktopEntryManager);
   if (defaults.isEmpty) {
     for (final ancester in mimedb.getAncesters(mimeType)) {
       print("ANCESTER $ancester");
-      defaults = XdgMimeApps.defaults(ancester);
+      defaults = XdgMimeApps.defaults(ancester, desktopEntries: desktopEntryManager);
       if (defaults.isNotEmpty) {
         break;
       }
