@@ -200,6 +200,8 @@ class _FilesTable extends ConsumerWidget {
 }
 
 class _FileRowBackground extends ConsumerWidget {
+  static final copyMarkWidth = _FilesTable.padding.left / 2;
+
   final String directory;
   final FileData fileData;
   final int index;
@@ -226,7 +228,6 @@ class _FileRowBackground extends ConsumerWidget {
         return value.operation;
       }),
     );
-    final copyMarkWidth = _FilesTable.padding.left / 2;
     return Stack(
       children: [
         ColoredBox(
@@ -277,27 +278,9 @@ class _FileRowBackground extends ConsumerWidget {
                     left: Radius.circular(_FilesTable.selectionBorderRadius.topLeft.x + copyMarkWidth),
                   ),
                   border: BoxBorder.fromLTRB(
-                    left: BorderSide(
-                      width: copyMarkWidth,
-                      color: (switch (copyOperation) {
-                        ClipboardOperation.copy => Colors.green,
-                        ClipboardOperation.cut => Colors.orange,
-                      }).withValues(alpha: 0.5),
-                    ),
-                    top: BorderSide(
-                      width: copyMarkWidth,
-                      color: (switch (copyOperation) {
-                        ClipboardOperation.copy => Colors.green,
-                        ClipboardOperation.cut => Colors.orange,
-                      }).withValues(alpha: 0.5),
-                    ),
-                    bottom: BorderSide(
-                      width: copyMarkWidth,
-                      color: (switch (copyOperation) {
-                        ClipboardOperation.copy => Colors.green,
-                        ClipboardOperation.cut => Colors.orange,
-                      }).withValues(alpha: 0.5),
-                    ),
+                    left: _getOperationBorderSide(context, copyOperation),
+                    top: _getOperationBorderSide(context, copyOperation),
+                    bottom: _getOperationBorderSide(context, copyOperation),
                   ),
                 ),
               ),
@@ -320,6 +303,16 @@ class _FileRowBackground extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+
+  BorderSide _getOperationBorderSide(BuildContext context, ClipboardOperation operation) {
+    return BorderSide(
+      width: copyMarkWidth,
+      color: (switch (operation) {
+        ClipboardOperation.copy => Colors.green,
+        ClipboardOperation.cut => Colors.orange,
+      }).withValues(alpha: 0.5),
     );
   }
 }
