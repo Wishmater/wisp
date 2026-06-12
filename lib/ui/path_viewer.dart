@@ -27,16 +27,24 @@ class _PathViewerState extends ConsumerState<PathViewer> {
   void initState() {
     super.initState();
     textFieldFocusNode = FocusNode();
-    textFieldFocusNode.addListener(showTextField);
+    textFieldFocusNode.addListener(onTextFieldFocus);
   }
 
-  void showTextField() {
-    if (!textFieldFocusNode.hasFocus) return;
-    if (!showingTextField) {
-      setState(() {
-        showingTextField = true;
-        queueScrollbarUpdate = true;
-      });
+  void onTextFieldFocus() {
+    if (!textFieldFocusNode.hasFocus) {
+      if (showingTextField) {
+        setState(() {
+          showingTextField = false;
+          queueScrollbarUpdate = true;
+        });
+      }
+    } else {
+      if (!showingTextField) {
+        setState(() {
+          showingTextField = true;
+          queueScrollbarUpdate = true;
+        });
+      }
     }
   }
 

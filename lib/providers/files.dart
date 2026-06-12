@@ -167,6 +167,7 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
       destination: destination,
     );
     state.add(operation);
+    ref.notifyListeners();
     _executeOperation(operation);
     return operation;
   }
