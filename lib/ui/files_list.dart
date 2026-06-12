@@ -6,6 +6,7 @@ import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
+import 'package:wisp/providers/clipboard.dart';
 import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/providers/scaffold.dart';
@@ -139,6 +140,16 @@ class _FilesTable extends ConsumerWidget {
         ModifierIgnoringActivator(LogicalKeyboardKey.escape, includeRepeats: true): () {
           ref.read(fileSelection.call(currentDirectoryValue).notifier).deselectAll();
         },
+        CharacterActivator('c', control: true, includeRepeats: false): () {
+          ref.read(clipboard.notifier).setData(ClipboardFiles(.copy, List.from(selection.selectedPaths)));
+        },
+        CharacterActivator('x', control: true, includeRepeats: false): () {
+          ref.read(clipboard.notifier).setData(ClipboardFiles(.cut, List.from(selection.selectedPaths)));
+        },
+        CharacterActivator('v', control: true, includeRepeats: false): () {
+          final clipboardFiles = ref.read(clipboard);
+          // TODO: 1 implemente paste
+        },
       },
       child: Focus(
         autofocus: true,
@@ -203,51 +214,112 @@ class _FileRowBackground extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: 1 implement custom hover highlight
     // TODO: 1 implement custom ink splash only on double click
-    return ColoredBox(
-      color: index % 2 != 0 ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: _FilesTable.padding.left,
-          right: _FilesTable.padding.right,
-        ),
-        child: RawGestureDetector(
-          gestures: <Type, GestureRecognizerFactory>{
-            // Hack to prevent the delay on single click when a double click action is declared
-            // https://github.com/flutter/flutter/issues/110300#issuecomment-1239969799
-            SerialTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<SerialTapGestureRecognizer>(
-              () => SerialTapGestureRecognizer(
-                allowedButtonsFilter: (int buttons) => buttons == kPrimaryButton,
-              ),
-              (SerialTapGestureRecognizer instance) {
-                instance.onSerialTapDown = (SerialTapDownDetails details) {
-                  if (details.count == 1) {
-                    final currentDirectoryValue = ref.read(currentDirectory);
-                    final notifier = ref.read(fileSelection.call(currentDirectoryValue).notifier);
-                    notifier.onClicked(fileData.path);
-                  } else if (details.count == 2) {
-                    if (fileData.typeData?.type == .directory) {
-                      ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
-                    } else {
-                      openFile(fileData);
-                    }
-                  }
-                };
+    final isFocused = ref.watch(
+      fileSelection.call(directory).select((value) {
+        return value.focusedPath == fileData.path;
+      }),
+    );
+    final copyOperation = ref.watch(
+      clipboard.select((value) {
+        if (value == null) return null;
+        if (!value.paths.contains(fileData.path)) return null;
+        return value.operation;
+      }),
+    );
+    final copyMarkWidth = _FilesTable.padding.left / 2;
+    return Stack(
+      children: [
+        ColoredBox(
+          color: index % 2 != 0 ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: _FilesTable.padding.left,
+              right: _FilesTable.padding.right,
+            ),
+            child: RawGestureDetector(
+              gestures: <Type, GestureRecognizerFactory>{
+                // Hack to prevent the delay on single click when a double click action is declared
+                // https://github.com/flutter/flutter/issues/110300#issuecomment-1239969799
+                SerialTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<SerialTapGestureRecognizer>(
+                  () => SerialTapGestureRecognizer(
+                    allowedButtonsFilter: (int buttons) => buttons == kPrimaryButton,
+                  ),
+                  (SerialTapGestureRecognizer instance) {
+                    instance.onSerialTapDown = (SerialTapDownDetails details) {
+                      if (details.count == 1) {
+                        final currentDirectoryValue = ref.read(currentDirectory);
+                        final notifier = ref.read(fileSelection.call(currentDirectoryValue).notifier);
+                        notifier.onClicked(fileData.path);
+                      } else if (details.count == 2) {
+                        if (fileData.typeData?.type == .directory) {
+                          ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
+                        } else {
+                          openFile(fileData);
+                        }
+                      }
+                    };
+                  },
+                ),
               },
             ),
-          },
-          child: ref.watch(fileSelection.call(directory)).focusedPath != fileData.path
-              ? null
-              : DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: _FilesTable.selectionBorderRadius,
-                    border: BoxBorder.all(
-                      width: 2,
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          ),
+        ),
+        if (copyOperation != null)
+          Positioned(
+            left: _FilesTable.padding.left - copyMarkWidth,
+            width: _FilesTable.selectionBorderRadius.topLeft.x + copyMarkWidth,
+            top: -copyMarkWidth,
+            bottom: -copyMarkWidth,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadiusGeometry.horizontal(
+                    left: Radius.circular(_FilesTable.selectionBorderRadius.topLeft.x + copyMarkWidth),
+                  ),
+                  border: BoxBorder.fromLTRB(
+                    left: BorderSide(
+                      width: copyMarkWidth,
+                      color: (switch (copyOperation) {
+                        ClipboardOperation.copy => Colors.green,
+                        ClipboardOperation.cut => Colors.orange,
+                      }).withValues(alpha: 0.5),
+                    ),
+                    top: BorderSide(
+                      width: copyMarkWidth,
+                      color: (switch (copyOperation) {
+                        ClipboardOperation.copy => Colors.green,
+                        ClipboardOperation.cut => Colors.orange,
+                      }).withValues(alpha: 0.5),
+                    ),
+                    bottom: BorderSide(
+                      width: copyMarkWidth,
+                      color: (switch (copyOperation) {
+                        ClipboardOperation.copy => Colors.green,
+                        ClipboardOperation.cut => Colors.orange,
+                      }).withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-        ),
-      ),
+              ),
+            ),
+          ),
+        if (isFocused)
+          Positioned.fill(
+            left: _FilesTable.padding.left,
+            right: _FilesTable.padding.right,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: _FilesTable.selectionBorderRadius,
+                  border: BoxBorder.all(
+                    width: 2,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
