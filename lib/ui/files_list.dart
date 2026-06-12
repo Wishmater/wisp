@@ -306,12 +306,12 @@ class _FileRowBackground extends ConsumerWidget {
     );
   }
 
-  BorderSide _getOperationBorderSide(BuildContext context, ClipboardOperation operation) {
+  BorderSide _getOperationBorderSide(BuildContext context, ClipboardFilesOperation operation) {
     return BorderSide(
       width: copyMarkWidth,
       color: (switch (operation) {
-        ClipboardOperation.copy => Colors.green,
-        ClipboardOperation.cut => Colors.orange,
+        ClipboardFilesOperation.copy => Colors.green,
+        ClipboardFilesOperation.cut => Colors.orange,
       }).withValues(alpha: 0.5),
     );
   }

@@ -1,12 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final clipboard = NotifierProvider(ClipboardNotifier.new);
+final clipboard = NotifierProvider(ClipboardFilesNotifier.new);
 
-enum ClipboardOperation { copy, cut }
+enum ClipboardFilesOperation { copy, cut }
 
 class ClipboardFiles {
-  ClipboardOperation operation;
+  ClipboardFilesOperation operation;
   List<String> paths;
 
   ClipboardFiles(this.operation, this.paths);
@@ -25,12 +25,33 @@ class ClipboardFiles {
   }
 }
 
-class ClipboardNotifier extends Notifier<ClipboardFiles?> {
+class ClipboardFilesNotifier extends Notifier<ClipboardFiles?> {
   @override
-  ClipboardFiles? build() => null;
+  ClipboardFiles? build() {
+    // TODO: 1 initialize and set up dispose for clipboard watcher that calls _onClipboardChanged
+    // clipboardWatcher.addListener(this);
+    // ref.onDispose(() {
+    //   clipboardWatcher.removeListener(this);
+    // });
+    _updateFromSystemClipboard();
+    return null;
+  }
 
   void setData(ClipboardFiles data) {
     state = data;
-    // TODO: 1 set the system clipboard to this operation
+    _setSystemClipboard();
+  }
+
+  // TODO: 1 this needs to be called whenever system clipboard data changes
+  Future<void> _onSystemClipboardChanged() async {
+    return _updateFromSystemClipboard();
+  }
+
+  Future<void> _updateFromSystemClipboard() async {
+    // TODO: 1 get data from system clipbard, parse, and set state
+  }
+
+  Future<void> _setSystemClipboard() async {
+    // TODO: 1 set system clipboard to our data
   }
 }
