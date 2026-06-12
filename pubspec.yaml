@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
 
   intl: ^0.20.2
+  collection: ^1.19.0
   dartx: ^1.2.0
   path: ^1.9.1
   path_provider: ^2.1.5
@@ -22,6 +23,9 @@ dependencies:
     git:
       url: https://github.com/ross96D/xdg-mime.dart
       ref: 0f59cdfdd5f41fe83e92a5f07d7bf6241ea46b91
+
+  fast_copy:
+    path: ./packages/fast_copy/
 
   from_zero_ui:
     # path: ../from_zero_ui/

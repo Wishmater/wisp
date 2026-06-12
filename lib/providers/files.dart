@@ -1,9 +1,13 @@
 import 'dart:io';
 
+import 'package:fast_copy/fast_copy.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
+import 'package:wisp/providers/clipboard.dart';
 import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/services/dir_reader.dart';
 import 'package:wisp/services/xdg_mime.dart';
@@ -142,3 +146,108 @@ final sortedDirectoryList = FzStreamProviderFamily<List<FileData>?, String>(
     },
   ),
 );
+
+final fileOperations = NotifierProvider(FileOperationsNotifier.new);
+
+class FileOperationsNotifier extends Notifier<List<FileOperation>> {
+  @override
+  List<FileOperation> build() => [];
+
+  FileOperation startOperation({
+    required FileOperationType type,
+    required List<String> paths,
+    required String destination,
+  }) {
+    print('Start operation $type: $paths => $destination');
+    assert(paths.isNotEmpty);
+    final operation = FileOperation(
+      startTime: DateTime.timestamp(),
+      type: type,
+      paths: paths,
+      destination: destination,
+    );
+    state.add(operation);
+    _executeOperation(operation);
+    return operation;
+  }
+
+  Future<void> _executeOperation(FileOperation operation) async {
+    // TODO: 1 should we have a single runner for multiple operations, or start a runner for each like this
+    final runner = await IsolateCopyRunner.spawn();
+    // TODO: 1 add option to change copier ?
+    final copier = CopyFileRange();
+    // TODO: 1 why am i forced to distinguish files from directories, shouldn't the isolate do this ?
+    final sources = operation.paths.map((e) {
+      final stat = File(e).statSync();
+      if (stat.type == .directory) {
+        return DirectorySource(path: e);
+      } else {
+        return FileSource(
+          path: e,
+          stat: FFileStat(
+            mode: stat.mode,
+            byteSize: stat.size,
+            change: stat.changed,
+            access: stat.accessed,
+            modification: stat.modified,
+            preferedIOSize: 69420, // ???????????????????????????????????????????????
+          ),
+        );
+      }
+    }).toList();
+    final targetFps = PlatformDispatcher.instance.implicitView?.display.refreshRate ?? 60;
+    final frameDuration = Duration(microseconds: 1000000 ~/ targetFps); // 60 fps
+    print('targetFps: $targetFps ($frameDuration)');
+    // TODO: 3 we can listen to this to react to changes in targetFps
+    // PlatformDispatcher.instance.onMetricsChanged = () {
+    //   // react...
+    // };
+    // TODO: 1 how do we do cut instead of copy ?
+    await runner.startCopy(copier, sources, operation.destination);
+    while (true) {
+      final frameStart = DateTime.timestamp();
+      final state = await runner.snapshot();
+      switch (state) {
+        case CopyPending():
+          print('CopyPending ${state.totalFiles} ${state.totalBytes}');
+          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
+            operation.state.value = state;
+          }
+        case CopyActive():
+          print('CopyPending ${state.completedFiles} ${state.completedBytes}');
+          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
+            operation.state.value = state;
+          }
+        case CopyDone():
+          stdout.write('\x1b[2K\r');
+          print('CopyDone');
+          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
+            operation.state.value = state;
+          }
+      }
+      if (state is CopyDone) break;
+      final frameElapsed = DateTime.timestamp().difference(frameStart);
+      final wait = frameDuration - frameElapsed;
+      if (wait > Duration.zero) {
+        await Future<void>.delayed(wait);
+      }
+    }
+  }
+}
+
+bool _copyStateEquals(CopyState a, CopyState b) {
+  if (a.runtimeType != b.runtimeType) return false;
+  if (a.totalBytes != b.totalBytes) return false;
+  if (a.totalFiles != b.totalFiles) return false;
+  if (a is CopyActive && b is CopyActive) {
+    return a.completedFiles == b.completedFiles &&
+        a.completedBytes == b.completedBytes &&
+        a.failures.length == b.failures.length;
+  }
+  if (a is CopyDone && b is CopyDone) {
+    return a.completedFiles == b.completedFiles &&
+        a.completedBytes == b.completedBytes &&
+        a.failures.length == b.failures.length;
+  }
+  return false;
+}

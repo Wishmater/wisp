@@ -141,14 +141,20 @@ class _FilesTable extends ConsumerWidget {
           ref.read(fileSelection.call(currentDirectoryValue).notifier).deselectAll();
         },
         CharacterActivator('c', control: true, includeRepeats: false): () {
-          ref.read(clipboard.notifier).setData(ClipboardFiles(.copy, List.from(selection.selectedPaths)));
+          ref.read(clipboard.notifier).setData(ClipboardFilesData(.copy, List.from(selection.selectedPaths)));
         },
         CharacterActivator('x', control: true, includeRepeats: false): () {
-          ref.read(clipboard.notifier).setData(ClipboardFiles(.cut, List.from(selection.selectedPaths)));
+          ref.read(clipboard.notifier).setData(ClipboardFilesData(.cut, List.from(selection.selectedPaths)));
         },
         CharacterActivator('v', control: true, includeRepeats: false): () {
           final clipboardFiles = ref.read(clipboard);
-          // TODO: 1 implemente paste
+          if (clipboardFiles == null) return;
+          final operationsNotifier = ref.read(fileOperations.notifier);
+          operationsNotifier.startOperation(
+            type: clipboardFiles.operationType,
+            paths: clipboardFiles.paths,
+            destination: currentDirectoryValue,
+          );
         },
       },
       child: Focus(
@@ -225,7 +231,7 @@ class _FileRowBackground extends ConsumerWidget {
       clipboard.select((value) {
         if (value == null) return null;
         if (!value.paths.contains(fileData.path)) return null;
-        return value.operation;
+        return value.operationType;
       }),
     );
     return Stack(
@@ -306,12 +312,12 @@ class _FileRowBackground extends ConsumerWidget {
     );
   }
 
-  BorderSide _getOperationBorderSide(BuildContext context, ClipboardFilesOperation operation) {
+  BorderSide _getOperationBorderSide(BuildContext context, FileOperationType operation) {
     return BorderSide(
       width: copyMarkWidth,
       color: (switch (operation) {
-        ClipboardFilesOperation.copy => Colors.green,
-        ClipboardFilesOperation.cut => Colors.orange,
+        FileOperationType.copy => Colors.green,
+        FileOperationType.cut => Colors.orange,
       }).withValues(alpha: 0.5),
     );
   }
