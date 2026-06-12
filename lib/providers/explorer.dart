@@ -24,7 +24,7 @@ final fileSelection = NotifierProvider.family<FileSelectionNotifier, FileSelecti
 class CurrentDirectoryNotifier extends Notifier<String> {
   @override
   String build() {
-    // return File('').absolute.path; // TODO: 1 this should probably come from args
+    return File('').absolute.path; // TODO: 1 this should probably come from args
     return '/nix/var/nix/profiles/';
   }
 

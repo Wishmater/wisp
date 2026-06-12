@@ -111,15 +111,13 @@ class SyncDirReader extends DirReader {
     List<FileSystemEntity> entries;
     try {
       entries = directory.listSync(followLinks: false);
-    } catch(e) {
+    } catch (e) {
       yield DirReaderError(e);
       return;
     }
 
     for (final e in entries) {
       final path = e.absolute.path;
-
-      print("AAAA ${p.basename(path)} ${p.basename(path).startsWith(".")}");
       if (p.basename(path).startsWith(".")) {
         continue;
       }
