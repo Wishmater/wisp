@@ -68,68 +68,77 @@ bool openFile(FileData fileData) {
 // );
 
 final directoryList = FzStreamProviderFamily<Iterable<FileData>?, String>(
-  (path) => FzStreamNotifierBuilder((notifier) async* {
-    final progressNotifier = notifier.ref.read(notifier.selfProgress.notifier);
-    final Map<String, FileData> result = {};
-    int iteration = 1;
-    final stopwatch = Stopwatch()..start();
-    // TODO: 2 use apiState.ref.OnDispose to cancel operation if it's still running
-    await for (final message in dirReader.readDir(Directory(path), DirReaderSettings())) {
-      switch (message) {
-        case SingleFileData(:final data):
-          result[data.path] = data;
-          progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
-        case SingleStatData(:final path, :final data):
-          result[path]!.statData = data;
-          progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
-        case SingleTypeData(:final path, :final data):
-          result[path]!.typeData = data;
-          progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
-        case SingleSpecialData(:final path, :final data):
-          result[path]!.specialData = data;
-          progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
-        case FilesListDone():
-          progressNotifier.setTotal(result.length * 4);
-        case FullUpdate update:
-          for (final data in update.newFileData) {
+  (path) => FzStreamNotifierBuilder(
+    keepDataOnLoading: true,
+    keepDataOnError: true,
+    (notifier) async* {
+      final progressNotifier = notifier.ref.read(notifier.selfProgress.notifier);
+      final Map<String, FileData> result = {};
+      int iteration = 1;
+      final stopwatch = Stopwatch()..start();
+      // TODO: 2 use apiState.ref.OnDispose to cancel operation if it's still running
+      await for (final message in dirReader.readDir(Directory(path), DirReaderSettings())) {
+        switch (message) {
+          case SingleFileData(:final data):
             result[data.path] = data;
-          }
-          for (final e in update.statDataUpdates) {
-            result[e.path]!.statData = e.data;
-          }
-          for (final e in update.typeDataUpdates) {
-            result[e.path]!.typeData = e.data;
-          }
-          for (final e in update.specialDataUpdates) {
-            result[e.path]!.specialData = e.data;
-          }
-          progressNotifier.setValues(update.totalProcessedCount.toDouble(), update.totalCount?.toDouble());
-        case DirReaderError():
-          // TODO: Handle this case.
-          throw UnimplementedError();
+            progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
+          case SingleStatData(:final path, :final data):
+            result[path]!.statData = data;
+            progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
+          case SingleTypeData(:final path, :final data):
+            result[path]!.typeData = data;
+            progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
+          case SingleSpecialData(:final path, :final data):
+            result[path]!.specialData = data;
+            progressNotifier.setCount((progressNotifier.progress.count ?? 0) + 1);
+          case FilesListDone():
+            progressNotifier.setTotal(result.length * 4);
+          case FullUpdate update:
+            for (final data in update.newFileData) {
+              result[data.path] = data;
+            }
+            for (final e in update.statDataUpdates) {
+              result[e.path]!.statData = e.data;
+            }
+            for (final e in update.typeDataUpdates) {
+              result[e.path]!.typeData = e.data;
+            }
+            for (final e in update.specialDataUpdates) {
+              result[e.path]!.specialData = e.data;
+            }
+            progressNotifier.setValues(update.totalProcessedCount.toDouble(), update.totalCount?.toDouble());
+          case DirReaderError():
+            // TODO: Handle this case.
+            throw UnimplementedError();
+        }
+        print(
+          'Provider received message ${iteration++} after ${stopwatch.elapsed}:'
+          ' total=${notifier.ref.read(notifier.selfProgress).total}'
+          ' done=${notifier.ref.read(notifier.selfProgress).count}',
+        );
+        yield result.values;
       }
-      print(
-        'Provider received message ${iteration++} after ${stopwatch.elapsed}:'
-        ' total=${notifier.ref.read(notifier.selfProgress).total}'
-        ' done=${notifier.ref.read(notifier.selfProgress).count}',
-      );
-      yield result.values;
-    }
-    notifier.ref.addDisposeDelay(disposeDelay);
-  }),
+      notifier.ref.addDisposeDelay(disposeDelay);
+    },
+  ),
 );
 
 final sortedDirectoryList = FzStreamProviderFamily<List<FileData>?, String>(
-  (path) => FzStreamNotifierBuilder((notifier) async* {
-    // TODO: 2 optimize sorting
-    notifier.ref.read(notifier.selfProgress.notifier).setValues(0, 0);
-    final sort = notifier.ref.watch(currentSort);
-    await for (final files in notifier.watchStream(directoryList.call(path))) {
-      if (files == null) continue;
-      final result = List<FileData>.from(files);
-      result.sort((a, b) => a.compareTo(b, sort.field, asc: sort.asc));
-      yield result;
-    }
-    notifier.ref.addDisposeDelay(disposeDelay);
-  }),
+  (path) => FzStreamNotifierBuilder(
+    keepDataOnLoading: true,
+    keepDataOnError: true,
+    (notifier) async* {
+      // TODO: 2 optimize sorting
+      notifier.ref.read(notifier.selfProgress.notifier).setValues(0, 0);
+      final sort = notifier.ref.watch(currentSort);
+      final stream = notifier.watchStream(directoryList.call(path));
+      await for (final files in stream) {
+        if (files == null) continue;
+        final result = List<FileData>.from(files);
+        result.sort((a, b) => a.compareTo(b, sort.field, asc: sort.asc));
+        yield result;
+      }
+      notifier.ref.addDisposeDelay(disposeDelay);
+    },
+  ),
 );
