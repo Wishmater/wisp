@@ -25,7 +25,6 @@ Future<void> main(List<String> args) async {
   final copierName = results['copier'] as String;
 
   final srcPath = 'example/test_data';
-  final destPath = 'example/test_data_copy';
 
   if (!Directory(srcPath).existsSync()) {
     print('Test data not found at "$srcPath".');
@@ -33,7 +32,7 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  final destDir = Directory(destPath);
+  final destDir = Directory("example/test_data_copy");
   if (destDir.existsSync()) {
     stdout.write('Deleting existing destination... ');
     destDir.deleteSync(recursive: true);
@@ -48,13 +47,13 @@ Future<void> main(List<String> args) async {
   };
 
   print('Using copier: $copierName');
-  print('Copying "$srcPath" -> "$destPath"');
+  print('Copying "$srcPath" -> "${destDir.path}"');
   print('');
 
   final runner = await IsolateCopyRunner.spawn();
   final start = DateTime.now();
 
-  await runner.startCopy(copier, [DirectorySource(path: srcPath)], destPath);
+  await runner.startCopy(copier, [DirectorySource(path: srcPath)], destDir);
 
   const frameDuration = Duration(microseconds: 16667); // 60 fps
   while (true) {

@@ -204,34 +204,38 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
     //   // react...
     // };
     // TODO: 1 how do we do cut instead of copy ?
-    await runner.startCopy(copier, sources, operation.destination);
+    await runner.startCopy(copier, sources, Directory(operation.destination));
+    CopyState state2;
     while (true) {
       final frameStart = DateTime.timestamp();
-      final state = await runner.snapshot();
-      switch (state) {
+      state2 = await runner.snapshot();
+      switch (state2) {
         case CopyPending():
-          print('CopyPending ${state.totalFiles} ${state.totalBytes}');
-          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
-            operation.state.value = state;
+          print('CopyPending ${state2.totalFiles} ${state2.totalBytes}');
+          if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
+            operation.state.value = state2;
           }
         case CopyActive():
-          print('CopyPending ${state.completedFiles} ${state.completedBytes}');
-          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
-            operation.state.value = state;
+          print('CopyPending ${state2.completedFiles} ${state2.completedBytes}');
+          if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
+            operation.state.value = state2;
           }
         case CopyDone():
           stdout.write('\x1b[2K\r');
           print('CopyDone');
-          if (operation.state.value == null || !_copyStateEquals(state, operation.state.value!)) {
-            operation.state.value = state;
+          if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
+            operation.state.value = state2;
           }
       }
-      if (state is CopyDone) break;
+      if (state2 is CopyDone) break;
       final frameElapsed = DateTime.timestamp().difference(frameStart);
       final wait = frameDuration - frameElapsed;
       if (wait > Duration.zero) {
         await Future<void>.delayed(wait);
       }
+    }
+    if (state2.failures.isNotEmpty) {
+      print(state2.failures);
     }
   }
 }

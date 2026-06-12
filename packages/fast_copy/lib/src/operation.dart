@@ -3,13 +3,14 @@ import 'dart:io';
 
 import 'package:fast_copy/src/copy.dart';
 import 'package:fast_copy/src/types.dart';
+import 'package:path/path.dart' as p;
 
 class CopyOperation {
   CopyState state;
 
   List<CopySource> sources;
 
-  String dest;
+  Directory dest;
 
   ICopy manager;
 
@@ -18,9 +19,10 @@ class CopyOperation {
   Completer<bool> _waitPaused;
 
   CopyOperation(this.sources, this.dest, this.manager, [bool paused = false])
-    : state = CopyState.pending(totalBytes: 0, totalFiles: 0),
+    : state = CopyState.pending(totalBytes: 0, totalFiles: 0, paused: paused),
       _actives = [],
       _waitPaused = Completer() {
+    assert(dest.existsSync());
     if (!paused) {
       _waitPaused.complete(true);
     }
@@ -30,38 +32,60 @@ class CopyOperation {
   Future<void> _start(bool paused) async {
     await _init().timeout(Duration(seconds: 1), onTimeout: () {});
     state = (state as CopyPending).toActive();
+    final copyActive = state as CopyActive;
 
-    for (final source in sources) {
-      await _performCopy(source, paused);
+    int i = 0;
+    while (i < sources.length) {
+      if (!_waitPaused.isCompleted) {
+        await _waitPaused.future;
+      }
+
+      final source = sources[i];
+      await _performCopy(source, paused, copyActive);
       paused = false;
+
+      i++;
     }
 
     state = (state as CopyActive).toDone();
   }
 
-  Future<void> _performCopy(CopySource source, bool paused) async {
+  Future<void> _copyFile(CopyActive state, FileCopyOperation fileCopy) async {
+    if (File(fileCopy.dest).existsSync()) {}
+    _actives.add(fileCopy);
+    try {
+      await manager.copyFile(fileCopy);
+    } catch (e) {
+      _actives.remove(fileCopy);
+      state.failures.add(
+        FileFailure(sourcePath: fileCopy.source.path, destPath: fileCopy.dest, error: e),
+      );
+    }
+  }
+
+  Future<void> _performCopy(CopySource source, bool paused, CopyActive state) async {
+    final destPath = p.join(dest.path, p.basename(source.path));
     switch (source) {
       case FileSource source:
         final fileCopy = FileCopyOperation(
           paused: paused,
           source: source,
-          dest: dest,
+          dest: destPath,
           parent: this,
         );
-        _actives.add(fileCopy);
-        await manager.copyFile(fileCopy);
+        _copyFile(state, fileCopy);
       case DirectorySource source:
         final dir = Directory(source.path);
         await for (final entry in dir.list(followLinks: false, recursive: true)) {
           final relativePath = entry.path.substring(source.path.length + 1);
-          final destinationPath = '$dest/$relativePath';
+          final destinationPath = p.join(destPath, relativePath);
 
           switch (entry) {
             case Directory():
               try {
                 manager.makeDirectorySync(destinationPath);
               } catch (e) {
-                (state as CopyActive).failures.add(
+                state.failures.add(
                   FileFailure(sourcePath: entry.path, destPath: destinationPath, error: e),
                 );
               }
@@ -69,7 +93,7 @@ class CopyOperation {
               try {
                 manager.makeLinkSync(entry, destinationPath);
               } catch (e) {
-                (state as CopyActive).failures.add(
+                state.failures.add(
                   FileFailure(sourcePath: entry.path, destPath: destinationPath, error: e),
                 );
               }
@@ -97,15 +121,7 @@ class CopyOperation {
                 dest: destinationPath,
                 parent: this,
               );
-              _actives.add(fileCopy);
-              try {
-                await manager.copyFile(fileCopy);
-              } catch (e) {
-                _actives.remove(fileCopy);
-                (state as CopyActive).failures.add(
-                  FileFailure(sourcePath: file.path, destPath: destinationPath, error: e),
-                );
-              }
+              _copyFile(state, fileCopy);
           }
         }
     }
@@ -139,6 +155,7 @@ class CopyOperation {
 
   void pause() {
     _waitPaused = Completer();
+    state.paused = true;
     for (final active in _actives) {
       active.pause();
     }

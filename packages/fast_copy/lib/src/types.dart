@@ -36,20 +36,32 @@ class FileFailure {
   final String sourcePath;
   final String destPath;
   final Object error;
+
   const FileFailure({required this.sourcePath, required this.destPath, required this.error});
+
+  @override
+  String toString() {
+    return "Copy from $sourcePath to $destPath failed with $error";
+  }
 }
 
 sealed class CopyState {
   int totalFiles;
   int totalBytes;
+  bool paused;
 
-  CopyState({required this.totalBytes, required this.totalFiles});
+  CopyState({required this.totalBytes, required this.totalFiles, required this.paused});
 
-  factory CopyState.pending({required int totalBytes, required int totalFiles}) = CopyPending;
+  factory CopyState.pending({
+    required int totalBytes,
+    required int totalFiles,
+    required bool paused,
+  }) = CopyPending;
 
   factory CopyState.active({
     required int totalFiles,
     required int totalBytes,
+    required bool paused,
     required int completedFiles,
     required int completedBytes,
     required List<FileFailure> failures,
@@ -58,6 +70,7 @@ sealed class CopyState {
   factory CopyState.done({
     required int totalFiles,
     required int totalBytes,
+    required bool paused,
     required int completedFiles,
     required int completedBytes,
     required List<FileFailure> failures,
@@ -65,12 +78,13 @@ sealed class CopyState {
 }
 
 class CopyPending extends CopyState {
-  CopyPending({required super.totalBytes, required super.totalFiles});
+  CopyPending({required super.totalBytes, required super.totalFiles, required super.paused});
 
   CopyActive toActive() {
     return CopyActive(
       totalBytes: totalBytes,
       totalFiles: totalFiles,
+      paused: paused,
       completedBytes: 0,
       completedFiles: 0,
       failures: [],
@@ -86,6 +100,7 @@ class CopyActive extends CopyState {
   CopyActive({
     required super.totalFiles,
     required super.totalBytes,
+    required super.paused,
     required this.completedFiles,
     required this.completedBytes,
     required this.failures,
@@ -95,6 +110,7 @@ class CopyActive extends CopyState {
     return CopyDone(
       completedBytes: completedBytes,
       completedFiles: completedFiles,
+      paused: paused,
       failures: failures,
       totalBytes: totalBytes,
       totalFiles: totalFiles,
@@ -110,6 +126,7 @@ class CopyDone extends CopyState {
   CopyDone({
     required super.totalFiles,
     required super.totalBytes,
+    required super.paused,
     required this.completedFiles,
     required this.completedBytes,
     required this.failures,

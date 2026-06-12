@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:fast_copy/src/copy.dart';
@@ -48,11 +49,14 @@ class IsolateCopyRunner {
   Future<void> startCopy(
     ICopy copier,
     List<CopySource> sources,
-    String destPath, [
+    Directory dest, [
     bool paused = false,
   ]) async {
+    if (!dest.existsSync()) {
+      throw Exception("$dest does not exists");
+    }
     await _request(
-      _StartCopyRequest(copier: copier, sources: sources, destPath: destPath, paused: paused),
+      _StartCopyRequest(copier: copier, sources: sources, dest: dest, paused: paused),
     );
     return;
   }
@@ -98,10 +102,10 @@ void _workerEntry(SendPort mainSendPort) {
         :final id,
         :final copier,
         :final sources,
-        :final destPath,
+        :final dest,
         :final paused,
       ):
-        currentOp = CopyOperation(sources, destPath, copier, paused);
+        currentOp = CopyOperation(sources, dest, copier, paused);
         mainSendPort.send(_StartCopyResponse(id));
       case _PauseRequest(:final id):
         currentOp!.pause();
@@ -125,14 +129,14 @@ sealed class _Request {
 
 class _StartCopyRequest extends _Request {
   final List<CopySource> sources;
-  final String destPath;
+  final Directory dest;
   final ICopy copier;
   final bool paused;
 
   _StartCopyRequest({
     required this.copier,
     required this.sources,
-    required this.destPath,
+    required this.dest,
     required this.paused,
   });
 }
