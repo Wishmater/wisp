@@ -114,7 +114,12 @@ class _FilesTable extends ConsumerWidget {
     final drawerWidthValue = ref.watch(drawerWidth);
     final currentDirectoryValue = ref.watch(currentDirectory);
     final selection = ref.watch(fileSelection.call(currentDirectoryValue));
-    print('BUILD _FilesTable ${selection.focusedPath} ${selection.selectedPaths}');
+    print(
+      'BUILD _FilesTable'
+      '\n    file count: ${data.length}'
+      '\n    focused: ${selection.focusedPath}'
+      '\n    selected: ${selection.selectedPaths}',
+    );
     final relayoutListener = ChangeNotifier();
     // TODO: 2 the ideal solution for this is: TableView takes a list of selected (selection would need to)
     // provide a list of FileData instead of just paths), then in didUpdateWidget, it can check if specifically

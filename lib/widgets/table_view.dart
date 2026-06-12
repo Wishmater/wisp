@@ -724,7 +724,7 @@ class TableViewRowBackgroundVicinity extends TableViewVicinity {
 
 class TableViewHeaderBackgroundVicinity extends TableViewVicinity {
   static const checker = TableViewHeaderBackgroundVicinity(yCount: 0);
-  static const beforeX = 1;
+  static const beforeX = 0;
   static const afterY = 0;
 
   const TableViewHeaderBackgroundVicinity({
