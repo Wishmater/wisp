@@ -51,7 +51,7 @@ bool openFile(FileData fileData) {
       if (entry == null) continue;
       final exec = entry.fields.exec;
       if (exec == null) continue;
-      final cmds = expandExec(exec, files: [fileData.path], urls: [p.toUri(fileData.path).toString()]);
+      final cmds = expandExec(exec, files: [fileData.path], urls: [fileData.path]);
       print("COMMANDS $cmds");
       assert(cmds.isNotEmpty);
       assert(cmds.length != 1);
