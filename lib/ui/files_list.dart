@@ -10,6 +10,7 @@ import 'package:wisp/providers/clipboard.dart';
 import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/providers/scaffold.dart';
+import 'package:wisp/ui/file_conflict_dialog.dart';
 import 'package:wisp/widgets/gestures.dart';
 import 'package:wisp/widgets/table_view.dart';
 
@@ -79,6 +80,17 @@ class _FilesListState extends ConsumerState<FilesList> {
               child: LinearProgressIndicator(
                 value: progress.progress,
               ),
+            );
+          },
+        ),
+        Consumer(
+          builder: (context, ref, _) {
+            final operations = ref.watch(fileOperations);
+            return Column(
+              children: operations.map((op) => ConflictListener(
+                key: ValueKey(op.startTime),
+                operation: op,
+              )).toList(),
             );
           },
         ),

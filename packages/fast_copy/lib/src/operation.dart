@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:fast_copy/src/copy.dart';
 import 'package:fast_copy/src/types.dart';
@@ -18,7 +19,16 @@ class CopyOperation {
 
   Completer<bool> _waitPaused;
 
-  CopyOperation(this.sources, this.dest, this.manager, [bool paused = false])
+  final SendPort _mainSendPort;
+
+  bool _replaceAll = false;
+  bool _skipAll = false;
+  bool _aborted = false;
+
+  int _conflictId = 0;
+  final Map<int, Completer<ConflictResolution>> _conflictAwaiters = {};
+
+  CopyOperation(this.sources, this.dest, this.manager, this._mainSendPort, [bool paused = false])
     : state = CopyState.pending(totalBytes: 0, totalFiles: 0, paused: paused),
       _actives = [],
       _waitPaused = Completer() {
@@ -39,6 +49,7 @@ class CopyOperation {
       if (!_waitPaused.isCompleted) {
         await _waitPaused.future;
       }
+      if (_aborted) break;
 
       final source = sources[i];
       await _performCopy(source, paused, copyActive);
@@ -51,7 +62,17 @@ class CopyOperation {
   }
 
   Future<void> _copyFile(CopyActive state, FileCopyOperation fileCopy) async {
-    if (File(fileCopy.dest).existsSync()) {}
+    if (File(fileCopy.dest).existsSync()) {
+      print("CONFLICT ${fileCopy.dest}");
+      final resolution = await _resolveConflict(fileCopy.source.path, fileCopy.dest);
+      print("CONFLICT RESOLVED WITH $resolution");
+      switch (resolution) {
+        case ConflictResolution.skip || ConflictResolution.skipAll || ConflictResolution.cancel:
+          return;
+        case ConflictResolution.replace || ConflictResolution.replaceAll:
+          break;
+      }
+    }
     _actives.add(fileCopy);
     try {
       await manager.copyFile(fileCopy);
@@ -73,10 +94,11 @@ class CopyOperation {
           dest: destPath,
           parent: this,
         );
-        _copyFile(state, fileCopy);
+        await _copyFile(state, fileCopy);
       case DirectorySource source:
         final dir = Directory(source.path);
         await for (final entry in dir.list(followLinks: false, recursive: true)) {
+          if (_aborted) break;
           final relativePath = entry.path.substring(source.path.length + 1);
           final destinationPath = p.join(destPath, relativePath);
 
@@ -121,7 +143,7 @@ class CopyOperation {
                 dest: destinationPath,
                 parent: this,
               );
-              _copyFile(state, fileCopy);
+              await _copyFile(state, fileCopy);
           }
         }
     }
@@ -150,6 +172,52 @@ class CopyOperation {
             state.totalFiles += 1;
           }
       }
+    }
+  }
+
+  Future<ConflictResolution> _resolveConflict(String sourcePath, String destPath) async {
+    if (_skipAll) return ConflictResolution.skip;
+    if (_replaceAll) return ConflictResolution.replace;
+
+    final id = _conflictId++;
+    final completer = Completer<ConflictResolution>();
+    _conflictAwaiters[id] = completer;
+    _mainSendPort.send(ConflictMessage(id, sourcePath, destPath));
+
+    final resolution = await completer.future;
+
+    switch (resolution) {
+      case ConflictResolution.replaceAll:
+        _replaceAll = true;
+      case ConflictResolution.skipAll:
+        _skipAll = true;
+      case ConflictResolution.cancel:
+        _aborted = true;
+      case ConflictResolution.replace:
+      case ConflictResolution.skip:
+        break;
+    }
+
+    return resolution;
+  }
+
+  void resolveCompleter(int id, ConflictResolution resolution) {
+    final completer = _conflictAwaiters.remove(id);
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(resolution);
+    }
+  }
+
+  void abort() {
+    _aborted = true;
+    for (final completer in _conflictAwaiters.values) {
+      if (!completer.isCompleted) {
+        completer.complete(ConflictResolution.cancel);
+      }
+    }
+    _conflictAwaiters.clear();
+    if (!_waitPaused.isCompleted) {
+      _waitPaused.complete(true);
     }
   }
 

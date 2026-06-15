@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:fast_copy/fast_copy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -149,9 +151,11 @@ final sortedDirectoryList = FzStreamProviderFamily<List<FileData>?, String>(
 
 final fileOperations = NotifierProvider(FileOperationsNotifier.new);
 
-class FileOperationsNotifier extends Notifier<List<FileOperation>> {
+class FileOperationsNotifier extends Notifier<UnmodifiableListView<FileOperation>> {
+  final List<FileOperation> _list = [];
+
   @override
-  List<FileOperation> build() => [];
+  UnmodifiableListView<FileOperation> build() => UnmodifiableListView(_list);
 
   FileOperation startOperation({
     required FileOperationType type,
@@ -166,10 +170,20 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
       paths: paths,
       destination: destination,
     );
-    state.add(operation);
-    ref.notifyListeners();
+    _list.add(operation);
+    state = UnmodifiableListView(_list);
     _executeOperation(operation);
     return operation;
+  }
+
+  void respondToConflict(FileOperation operation, ConflictResolution resolution) {
+    print("RESPOND_TO_CONFLICT ${state.contains(operation)}");
+    if (!state.contains(operation)) return;
+
+    final completer = operation.conflictCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(resolution);
+    }
   }
 
   Future<void> _executeOperation(FileOperation operation) async {
@@ -204,6 +218,22 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
     //   // react...
     // };
     // TODO: 1 how do we do cut instead of copy ?
+
+    final conflictSub = runner.conflictStream.listen(null);
+    conflictSub.onData((msg) async {
+      final completer = Completer<ConflictResolution>();
+      operation.conflictCompleter = completer;
+      operation.currentConflict.value = msg;
+      final resolution = await completer.future;
+      operation.conflictCompleter = null;
+      operation.currentConflict.value = null;
+      if (resolution == ConflictResolution.cancel) {
+        await runner.abort();
+      } else {
+        runner.resolveConflict(msg.id, resolution);
+      }
+    });
+
     await runner.startCopy(copier, sources, Directory(operation.destination));
     CopyState state2;
     while (true) {
@@ -211,18 +241,14 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
       state2 = await runner.snapshot();
       switch (state2) {
         case CopyPending():
-          print('CopyPending ${state2.totalFiles} ${state2.totalBytes}');
           if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
             operation.state.value = state2;
           }
         case CopyActive():
-          print('CopyPending ${state2.completedFiles} ${state2.completedBytes}');
           if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
             operation.state.value = state2;
           }
         case CopyDone():
-          stdout.write('\x1b[2K\r');
-          print('CopyDone');
           if (operation.state.value == null || !_copyStateEquals(state2, operation.state.value!)) {
             operation.state.value = state2;
           }
@@ -234,9 +260,11 @@ class FileOperationsNotifier extends Notifier<List<FileOperation>> {
         await Future<void>.delayed(wait);
       }
     }
+    await conflictSub.cancel();
     if (state2.failures.isNotEmpty) {
       print(state2.failures);
     }
+    _list.remove(operation);
   }
 }
 

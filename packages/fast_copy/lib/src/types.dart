@@ -132,3 +132,20 @@ class CopyDone extends CopyState {
     required this.failures,
   });
 }
+
+class ConflictMessage {
+  final int id;
+  final String sourcePath;
+  final String destPath;
+
+  const ConflictMessage(this.id, this.sourcePath, this.destPath);
+}
+
+class ConflictResponse {
+  final int id;
+  final ConflictResolution resolution;
+
+  const ConflictResponse(this.id, this.resolution);
+}
+
+enum ConflictResolution { replace, skip, replaceAll, skipAll, cancel }

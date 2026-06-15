@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:fast_copy/fast_copy.dart';
 import 'package:flutter/foundation.dart';
@@ -64,6 +66,8 @@ class FileOperation {
   final List<String> paths;
   final String destination;
   final ValueNotifier<CopyState?> state = ValueNotifier(null);
+  final ValueNotifier<ConflictMessage?> currentConflict = ValueNotifier(null);
+  Completer<ConflictResolution>? conflictCompleter;
 
   FileOperation({
     required this.startTime,

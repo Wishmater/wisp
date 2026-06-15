@@ -76,6 +76,19 @@ class IsolateCopyRunner {
     return response.state;
   }
 
+  Stream<ConflictMessage> get conflictStream => _broadcastStream
+      .where((msg) => msg is ConflictMessage)
+      .cast<ConflictMessage>();
+
+  void resolveConflict(int id, ConflictResolution resolution) {
+    _workerSendPort.send(ConflictResponse(id, resolution));
+  }
+
+  Future<void> abort() async {
+    await _request(_AbortRequest());
+    return;
+  }
+
   void dispose() {
     _receiverPort.close();
     _isolate.kill(priority: Isolate.immediate);
@@ -97,7 +110,7 @@ void _workerEntry(SendPort mainSendPort) {
   CopyOperation? currentOp;
 
   workerPort.listen((msg) {
-    switch (msg as _Request) {
+    switch (msg) {
       case _StartCopyRequest(
         :final id,
         :final copier,
@@ -105,7 +118,7 @@ void _workerEntry(SendPort mainSendPort) {
         :final dest,
         :final paused,
       ):
-        currentOp = CopyOperation(sources, dest, copier, paused);
+        currentOp = CopyOperation(sources, dest, copier, mainSendPort, paused);
         mainSendPort.send(_StartCopyResponse(id));
       case _PauseRequest(:final id):
         currentOp!.pause();
@@ -115,6 +128,11 @@ void _workerEntry(SendPort mainSendPort) {
         mainSendPort.send(_ResumeResponse(id));
       case _SnapshotRequest(:final id):
         mainSendPort.send(_SnapshotResponse(id, currentOp!.state));
+      case ConflictResponse(:final id, :final resolution):
+        currentOp?.resolveCompleter(id, resolution);
+      case _AbortRequest(:final id):
+        currentOp?.abort();
+        mainSendPort.send(_AbortResponse(id));
     }
   });
 }
@@ -168,4 +186,10 @@ class _ResumeResponse extends _Response {
 class _SnapshotResponse extends _Response {
   final CopyState state;
   _SnapshotResponse(super.id, this.state);
+}
+
+class _AbortRequest extends _Request {}
+
+class _AbortResponse extends _Response {
+  _AbortResponse(super.id);
 }
