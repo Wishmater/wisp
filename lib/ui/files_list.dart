@@ -112,8 +112,8 @@ class _FilesTable extends ConsumerWidget {
 
   static const rowHeight = 36.0;
   static const headerHeight = 30.0;
-  static const columns = <FileDataField>[.filename, .size, .type, .modified];
-  static const columnSizes = <double>[512, 128, 128, 256];
+  static const columns = <FileDataField>[.icon, .filename, .size, .type, .modified];
+  static const columnSizes = <double>[32, 512, 128, 128, 256];
   static const padding = EdgeInsets.only(
     left: 16,
     right: 24,
@@ -147,76 +147,79 @@ class _FilesTable extends ConsumerWidget {
       // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
       relayoutListener.notifyListeners();
     });
-    return CallbackShortcuts(
-      bindings: {
-        ModifierIgnoringActivator(LogicalKeyboardKey.arrowUp, includeRepeats: true): () {
-          ref.read(fileSelection.call(currentDirectoryValue).notifier).onUpPressed();
+    return IconTheme(
+      data: Theme.of(context).iconTheme.copyWith(size: 22),
+      child: CallbackShortcuts(
+        bindings: {
+          ModifierIgnoringActivator(LogicalKeyboardKey.arrowUp, includeRepeats: true): () {
+            ref.read(fileSelection.call(currentDirectoryValue).notifier).onUpPressed();
+          },
+          ModifierIgnoringActivator(LogicalKeyboardKey.arrowDown, includeRepeats: true): () {
+            ref.read(fileSelection.call(currentDirectoryValue).notifier).onDownPressed();
+          },
+          ModifierIgnoringActivator(LogicalKeyboardKey.escape, includeRepeats: true): () {
+            ref.read(fileSelection.call(currentDirectoryValue).notifier).deselectAll();
+          },
+          CharacterActivator('c', control: true, includeRepeats: false): () {
+            ref.read(clipboard.notifier).setData(ClipboardFilesData(.copy, List.from(selection.selectedPaths)));
+          },
+          CharacterActivator('x', control: true, includeRepeats: false): () {
+            ref.read(clipboard.notifier).setData(ClipboardFilesData(.cut, List.from(selection.selectedPaths)));
+          },
+          CharacterActivator('v', control: true, includeRepeats: false): () {
+            final clipboardFiles = ref.read(clipboard);
+            if (clipboardFiles == null) return;
+            final operationsNotifier = ref.read(fileOperations.notifier);
+            operationsNotifier.startOperation(
+              type: clipboardFiles.operationType,
+              paths: clipboardFiles.paths,
+              destination: currentDirectoryValue,
+            );
+          },
         },
-        ModifierIgnoringActivator(LogicalKeyboardKey.arrowDown, includeRepeats: true): () {
-          ref.read(fileSelection.call(currentDirectoryValue).notifier).onDownPressed();
-        },
-        ModifierIgnoringActivator(LogicalKeyboardKey.escape, includeRepeats: true): () {
-          ref.read(fileSelection.call(currentDirectoryValue).notifier).deselectAll();
-        },
-        CharacterActivator('c', control: true, includeRepeats: false): () {
-          ref.read(clipboard.notifier).setData(ClipboardFilesData(.copy, List.from(selection.selectedPaths)));
-        },
-        CharacterActivator('x', control: true, includeRepeats: false): () {
-          ref.read(clipboard.notifier).setData(ClipboardFilesData(.cut, List.from(selection.selectedPaths)));
-        },
-        CharacterActivator('v', control: true, includeRepeats: false): () {
-          final clipboardFiles = ref.read(clipboard);
-          if (clipboardFiles == null) return;
-          final operationsNotifier = ref.read(fileOperations.notifier);
-          operationsNotifier.startOperation(
-            type: clipboardFiles.operationType,
-            paths: clipboardFiles.paths,
-            destination: currentDirectoryValue,
-          );
-        },
-      },
-      child: Focus(
-        autofocus: true,
-        canRequestFocus: true,
-        child: TableView(
-          rows: data,
-          columns: columns,
-          columnSizes: columnSizes,
-          rowHeight: headerHeight,
-          headerHeight: rowHeight,
-          horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
-          verticalDetails: ScrollableDetails.vertical(controller: verticalController),
-          relayoutListenable: relayoutListener,
-          padding: padding,
-          hardPadding: EdgeInsets.only(
-            top: appbarHeightValue,
-            left: drawerWidthValue,
+        child: Focus(
+          autofocus: true,
+          canRequestFocus: true,
+          child: TableView(
+            rows: data,
+            columns: columns,
+            columnSizes: columnSizes,
+            rowHeight: headerHeight,
+            headerHeight: rowHeight,
+            horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
+            verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+            relayoutListenable: relayoutListener,
+            padding: padding,
+            hardPadding: EdgeInsets.only(
+              top: appbarHeightValue,
+              left: drawerWidthValue,
+            ),
+            selectedChecker: (fileData, _) {
+              return selection.selectedPaths.contains(fileData.path);
+            },
+            builder: (context, fileData, fileField, _, _) {
+              return _FileCell(fileData: fileData, fileField: fileField);
+            },
+            headerBuilder: (context, fileField, _) {
+              return _FileHeaderCell(fileField: fileField);
+            },
+            rowBackgroundBuilder: (context, fileData, rowIndex) {
+              return _FileRowBackground(fileData: fileData, index: rowIndex, directory: currentDirectoryValue);
+            },
+            headerBackgroundBuilder: (context) {
+              return Material(
+                color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: 0.75),
+              );
+            },
+            selectionBuilder: (context) {
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: selectionBorderRadius,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                ),
+              );
+            },
           ),
-          selectedChecker: (fileData, _) {
-            return selection.selectedPaths.contains(fileData.path);
-          },
-          builder: (context, fileData, fileField, _, _) {
-            return _FileCell(fileData: fileData, fileField: fileField);
-          },
-          headerBuilder: (context, fileField, _) {
-            return _FileHeaderCell(fileField: fileField);
-          },
-          rowBackgroundBuilder: (context, fileData, rowIndex) {
-            return _FileRowBackground(fileData: fileData, index: rowIndex, directory: currentDirectoryValue);
-          },
-          headerBackgroundBuilder: (context) {
-            return Material(
-              color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: 0.75),
-            );
-          },
-          selectionBuilder: (context) {
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: selectionBorderRadius,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            );
-          },
         ),
       ),
     );
@@ -352,6 +355,24 @@ class _FileCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (fileField == .icon) {
+      return IgnorePointer(
+        child: Container(
+          padding: EdgeInsets.only(left: 10),
+          alignment: Alignment.center,
+          child: switch (fileData.typeData?.type) {
+            null => SizedBox.shrink(),
+            // TODO: 2 implement colors from theme
+            FileType.directory => SymbolIcon(Symbols.folder, color: Colors.orange),
+            FileType.video => SymbolIcon(Symbols.videocam, color: Colors.purple.shade400),
+            FileType.audio => SymbolIcon(Symbols.audiotrack, color: Colors.red),
+            FileType.image => SymbolIcon(Symbols.image, color: Colors.blue),
+            FileType.document => SymbolIcon(Symbols.text_snippet, color: Colors.green),
+            FileType.other => SymbolIcon(Symbols.question_mark, color: Colors.grey),
+          },
+        ),
+      );
+    }
     final value = fileData.getFormatted(context, fileField);
     return IgnorePointer(
       child: Container(

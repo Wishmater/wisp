@@ -29,6 +29,8 @@ enum FileDataField {
   genre,
   album,
   releaseYear,
+  // special
+  icon,
   ;
 
   String getUiName(BuildContext context) {
@@ -53,6 +55,7 @@ enum FileDataField {
       FileDataField.genre => 'Genre',
       FileDataField.album => 'Album',
       FileDataField.releaseYear => 'Release Year',
+      FileDataField.icon => '',
     };
   }
 }
@@ -215,6 +218,7 @@ extension FileDataFieldUtils on FileData {
           _ => null,
         },
       ),
+      FileDataField.icon => throw UnsupportedError('Can\'t sort by icon'),
     };
 
     if (result == 0) {
@@ -410,6 +414,7 @@ extension FileDataFieldUtils on FileData {
         },
         _ => '',
       },
+      FileDataField.icon => '',
     };
   }
 }
