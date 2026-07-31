@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/ui/appbar.dart';
-import 'package:wisp/ui/drawer.dart';
+// import 'package:wisp/ui/drawer.dart';
 import 'package:wisp/ui/files_list.dart';
 
 class ExplorerScaffold extends ConsumerWidget {
@@ -13,7 +13,7 @@ class ExplorerScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appbarHeightValue = ref.watch(appbarHeight);
-    final drawerWidthValue = ref.watch(drawerWidth);
+    // final drawerWidthValue = ref.watch(drawerWidth);
     return Stack(
       children: [
         const FilesList(),

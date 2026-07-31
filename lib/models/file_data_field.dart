@@ -1,5 +1,8 @@
 import 'package:flutter/widgets.dart';
+import 'package:human_file_size/human_file_size.dart';
+import 'package:intl/intl.dart';
 import 'package:wisp/models/file_data.dart';
+import 'package:wisp/util/human_readable_bytes.dart';
 
 enum FileDataField {
   path,
@@ -242,7 +245,18 @@ extension FileDataFieldUtils on FileData {
           _ => '',
           // _ => throw WrongFileSpecialDataException(typeData!.type, specialData.runtimeType),
         },
-        _ => statData == null ? null : '${statData!.size} B', // TODO: 1 format size properly
+        _ =>
+          statData == null
+              ? null
+              : humanFileSize(
+                  statData!.size,
+                  unitConversion: const BestFitDecUnitConversion(
+                    numeralSystem: DecimalByteNumeralSystem(),
+                  ),
+                  quantityDisplayMode: IntlQuantityDisplayMode(
+                    numberFormat: NumberFormat.decimalPatternDigits(decimalDigits: statData!.size < 512 ? 0 : 1),
+                  ),
+                ),
       },
       FileDataField.modified => statData?.modified.toString(), // TODO: 1 format datetime properly
       FileDataField.created => statData?.created.toString(), // TODO: 1 format datetime properly

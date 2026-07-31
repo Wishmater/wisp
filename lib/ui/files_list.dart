@@ -399,9 +399,11 @@ class _FileHeaderCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ExcludeFocusTraversal(
       child: InkWell(
-        onTap: () {
-          ref.read(currentSort.notifier).setField(fileField);
-        },
+        onTap: fileField == .icon
+            ? null
+            : () {
+                ref.read(currentSort.notifier).setField(fileField);
+              },
         child: Padding(
           padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
           child: Align(
