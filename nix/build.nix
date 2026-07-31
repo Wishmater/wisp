@@ -1,6 +1,8 @@
-{ pkgs ? import <nixpkgs> }:
+{
+  pkgs ? import <nixpkgs>,
+}:
 
-pkgs.flutter.buildFlutterApplication rec {
+pkgs.flutter344.buildFlutterApplication rec {
 
   pname = "wisp";
   version = "0.0.1";

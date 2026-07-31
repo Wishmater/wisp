@@ -1,8 +1,12 @@
-{ pkgs ? import <nixpkgs> { } }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 
-let build = import ./build.nix { inherit pkgs; };
+let
+  build = import ./build.nix { inherit pkgs; };
 
-in pkgs.mkShell {
+in
+pkgs.mkShell {
 
   # Inherits all buildInputs/nativeBuildInputs from build.nix
   inputsFrom = [ build ];
@@ -10,7 +14,7 @@ in pkgs.mkShell {
   # Add other packages needed for dev, but not for build
   buildInputs = with pkgs; [
 
-    flutter
+    flutter344
 
     cmake
     clang
@@ -24,11 +28,11 @@ in pkgs.mkShell {
     libsepol
     libthai
     libdatrie
-    xorg.libXdmcp
+    libxdmcp
     lerc
     libxkbcommon
     libepoxy
-    xorg.libXtst
+    libxtst
 
   ];
 
