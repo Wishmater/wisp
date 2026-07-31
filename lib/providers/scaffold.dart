@@ -5,7 +5,8 @@ final appbarHeight = NotifierProvider<DimensionNotifier, double>(() {
 });
 
 final drawerWidth = NotifierProvider<DimensionNotifier, double>(() {
-  return DimensionNotifier(128);
+  return DimensionNotifier(0);
+  // return DimensionNotifier(128);
 });
 
 class DimensionNotifier extends Notifier<double> {

@@ -31,20 +31,20 @@ class ExplorerScaffold extends ConsumerWidget {
           //   ),
           // ),
         ),
-        Positioned(
-          left: 0,
-          bottom: 0,
-          top: appbarHeightValue,
-          width: drawerWidthValue,
-          child: const ExplorerDrawer(),
-          // TODO: 2 experiment with blur, hard to do on table header
-          // child: ClipRect(
-          //   child: BackdropFilter(
-          //     filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-          //     child: const ExplorerDrawer(),
-          //   ),
-          // ),
-        ),
+        // Positioned(
+        //   left: 0,
+        //   bottom: 0,
+        //   top: appbarHeightValue,
+        //   width: drawerWidthValue,
+        //   child: const ExplorerDrawer(),
+        //   // TODO: 2 experiment with blur, hard to do on table header
+        //   // child: ClipRect(
+        //   //   child: BackdropFilter(
+        //   //     filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        //   //     child: const ExplorerDrawer(),
+        //   //   ),
+        //   // ),
+        // ),
       ],
     );
   }
