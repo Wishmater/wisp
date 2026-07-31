@@ -30,10 +30,10 @@ dependencies:
     path: ./packages/fast_copy/
 
   from_zero_ui:
-    path: ../from_zero_ui/
-    # git:
-    #   url: https://github.com/FromZeroDev/from_zero_ui
-    #   ref: fz_notifier
+    # path: ../from_zero_ui/
+    git:
+      url: https://github.com/FromZeroDev/from_zero_ui
+      ref: fz_notifier
 
 dev_dependencies:
   flutter_test:
