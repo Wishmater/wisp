@@ -488,7 +488,11 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       _hitTestOrderedChildren.add(headerBackground);
       final headerBackgroundParentData = headerBackground.parentData! as TwoDimensionalViewportParentData;
       // TODO: 3 would it be better if we limit this to the viewport with instead of spanning over edges
-      headerBackground.layout(BoxConstraints.tight(Size(maxWidth - hardPadding.horizontal, headerHeight)));
+      headerBackground.layout(
+        BoxConstraints.tight(
+          Size(maxWidth.coerceAtLeast(viewportDimension.width) - hardPadding.horizontal, headerHeight),
+        ),
+      );
       headerBackgroundParentData.layoutOffset = Offset(
         hardPadding.left,
         this.padding.top + hardPadding.top,
@@ -519,7 +523,11 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
       if (rowBackground != null) {
         _hitTestOrderedChildren.add(rowBackground);
         final rowBackgroundParentData = rowBackground.parentData! as TwoDimensionalViewportParentData;
-        rowBackground.layout(BoxConstraints.tight(Size(maxWidth - hardPadding.horizontal, rowHeight)));
+        rowBackground.layout(
+          BoxConstraints.tight(
+            Size((maxWidth).coerceAtLeast(viewportDimension.width) - hardPadding.horizontal, rowHeight),
+          ),
+        );
         rowBackgroundParentData.layoutOffset = Offset(
           hardPadding.left - horizontalOffset.pixels,
           padding.top + hardPadding.top + row * rowHeight - verticalOffset.pixels,
@@ -545,7 +553,10 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
           final selectionParentData = selection.parentData! as TwoDimensionalViewportParentData;
           selection.layout(
             BoxConstraints.tight(
-              Size(maxWidth - padding.horizontal - hardPadding.horizontal, rowHeight * vicinity.extent),
+              Size(
+                maxWidth.coerceAtLeast(viewportDimension.width) - padding.horizontal - hardPadding.horizontal,
+                rowHeight * vicinity.extent,
+              ),
             ),
           );
           selectionParentData.layoutOffset = Offset(
