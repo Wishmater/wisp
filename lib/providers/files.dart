@@ -6,7 +6,6 @@ import 'package:fast_copy/fast_copy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/clipboard.dart';
@@ -171,7 +170,7 @@ class FileOperationsNotifier extends Notifier<UnmodifiableListView<FileOperation
       destination: destination,
     );
     _list.add(operation);
-    state = UnmodifiableListView(_list);
+    ref.notifyListeners();
     _executeOperation(operation);
     return operation;
   }
@@ -212,7 +211,6 @@ class FileOperationsNotifier extends Notifier<UnmodifiableListView<FileOperation
     }).toList();
     final targetFps = PlatformDispatcher.instance.implicitView?.display.refreshRate ?? 60;
     final frameDuration = Duration(microseconds: 1000000 ~/ targetFps); // 60 fps
-    print('targetFps: $targetFps ($frameDuration)');
     // TODO: 3 we can listen to this to react to changes in targetFps
     // PlatformDispatcher.instance.onMetricsChanged = () {
     //   // react...
@@ -265,6 +263,7 @@ class FileOperationsNotifier extends Notifier<UnmodifiableListView<FileOperation
       print(state2.failures);
     }
     _list.remove(operation);
+    ref.notifyListeners();
   }
 }
 

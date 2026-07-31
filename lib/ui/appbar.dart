@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_actions.dart';
 import 'package:from_zero_ui/packages/fz_appbar.dart';
+import 'package:from_zero_ui/packages/fz_icons.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/ui/path_viewer.dart';
@@ -29,18 +31,18 @@ class ExplorerAppbar extends ConsumerWidget {
                 crossAxisAlignment: .center,
                 children: [
                   ActionFromZero(
-                    icon: Icon(Icons.keyboard_arrow_up_outlined),
+                    icon: SymbolIcon(Symbols.keyboard_arrow_up),
                     title: 'Up',
                     onTap: (context) {
                       ref.read(currentDirectory.notifier).goUp();
                     },
                   ).buildIcon(context),
                   ActionFromZero(
-                    icon: Icon(Icons.keyboard_arrow_left_outlined),
+                    icon: SymbolIcon(Symbols.keyboard_arrow_left),
                     title: 'Back',
                   ).buildIcon(context),
                   ActionFromZero(
-                    icon: Icon(Icons.keyboard_arrow_right_outlined),
+                    icon: SymbolIcon(Symbols.keyboard_arrow_right),
                     title: 'Forward',
                   ).buildIcon(context),
                   // SizedBox(width: 12),

@@ -2,8 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:from_zero_ui/packages/fz_icons.dart';
 import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/clipboard.dart';
@@ -87,10 +89,14 @@ class _FilesListState extends ConsumerState<FilesList> {
           builder: (context, ref, _) {
             final operations = ref.watch(fileOperations);
             return Column(
-              children: operations.map((op) => ConflictListener(
-                key: ValueKey(op.startTime),
-                operation: op,
-              )).toList(),
+              children: operations
+                  .map(
+                    (op) => ConflictListener(
+                      key: ValueKey(op.startTime),
+                      operation: op,
+                    ),
+                  )
+                  .toList(),
             );
           },
         ),
@@ -395,8 +401,8 @@ class _FileHeaderCell extends ConsumerWidget {
                       if (currentSortValue.field != fileField) {
                         return SizedBox.shrink();
                       }
-                      return Icon(
-                        currentSortValue.asc ? Icons.arrow_drop_down : Icons.arrow_drop_up,
+                      return SymbolIcon(
+                        currentSortValue.asc ? Symbols.arrow_drop_down : Symbols.arrow_drop_up,
                         color: Theme.of(context).colorScheme.outline,
                       );
                     },

@@ -1,7 +1,9 @@
 import 'package:fast_copy/fast_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:from_zero_ui/packages/fz_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:wisp/providers/clipboard.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/providers/scaffold.dart';
@@ -85,13 +87,13 @@ class OperationsView extends ConsumerWidget {
                     children: [
                       SizedBox(width: 8),
                       switch (operation.type) {
-                        FileOperationType.copy => Icon(
-                          Icons.copy,
+                        FileOperationType.copy => SymbolIcon(
+                          Symbols.content_copy,
                           size: 20,
                           color: Colors.green.withValues(alpha: 0.5),
                         ),
-                        FileOperationType.cut => Icon(
-                          Icons.cut,
+                        FileOperationType.cut => SymbolIcon(
+                          Symbols.content_cut,
                           size: 20,
                           color: Colors.orange.withValues(alpha: 0.5),
                         ),

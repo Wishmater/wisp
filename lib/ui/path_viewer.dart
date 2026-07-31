@@ -4,7 +4,10 @@ import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:from_zero_ui/from_zero_ui.dart';
+import 'package:from_zero_ui/packages/fz_icons.dart';
+import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
+import 'package:from_zero_ui/packages/fz_scrollbar.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/widgets/gestures.dart';
@@ -187,8 +190,8 @@ class PathPartsView extends ConsumerWidget {
             child: OverflowBox(
               alignment: Alignment.center,
               maxWidth: double.infinity,
-              child: Icon(
-                Icons.arrow_right,
+              child: SymbolIcon(
+                Symbols.arrow_right,
                 color: Theme.of(context).colorScheme.outlineVariant,
               ),
             ),

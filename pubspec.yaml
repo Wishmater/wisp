@@ -18,6 +18,7 @@ dependencies:
   flutter_riverpod: ^3.2.1
   animations: ^2.2.0
   window_manager: ^0.4.3
+  material_symbols_icons: ^4.2960.0
 
   xdg_mime:
     git:
@@ -41,6 +42,7 @@ dev_dependencies:
 dependency_overrides:
   intl: ^0.20.2
   archive: ^4.0.7
+  analyzer: ^8.0.0 # material_symbols_icons has an outdated version, remove when it is updated
 
 flutter:
   uses-material-design: true
