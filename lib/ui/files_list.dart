@@ -131,7 +131,7 @@ class _FilesTable extends ConsumerStatefulWidget {
 class _FilesTableState extends ConsumerState<_FilesTable> {
   late var columns = List<FileDataField>.from(_FilesTable.defaultColumns);
   late var columnSizes = columns.map((e) => e.getDefaultWidth()).toList();
-  FileDataField? lastColumnDragHovered;
+  late Offset lastColumnDragGlobalOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -211,10 +211,40 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
               return _FileHeaderCell(
                 fileField: fileField,
                 key: _FileHeaderCell._globalKeys[fileField],
+                onDragGlobalPositionChange: (offset) {
+                  lastColumnDragGlobalOffset = offset;
+                },
                 onDragColumn: (from, to) {
-                  if (lastColumnDragHovered == to) return; // fix weird cases where you would flicker back and forth
-                  lastColumnDragHovered = to;
-                  if (from == to) return;
+                  for (final e in _FileHeaderCell._globalKeys.entries) {
+                    if (e.key == from) continue;
+                    e.value.currentState?.dragMouseOffset.value = Offset.zero;
+                  }
+                  if (from == to) {
+                    return;
+                  }
+                  final fromState = _FileHeaderCell._globalKeys[from]!.currentState!;
+                  final toState = _FileHeaderCell._globalKeys[to]!.currentState!;
+                  final fromPositioning = fromState.getPositioning();
+                  final toPositioning = toState.getPositioning();
+                  final diff = toPositioning.size.width - fromPositioning.size.width;
+                  if (diff > 0) {
+                    double penetration;
+                    if (fromPositioning.offset.dx < toPositioning.offset.dx) {
+                      penetration = lastColumnDragGlobalOffset.dx - toPositioning.offset.dx;
+                    } else {
+                      penetration = toPositioning.offset.dx + toPositioning.size.width - lastColumnDragGlobalOffset.dx;
+                    }
+                    if (diff - penetration > -12) {
+                      if (fromPositioning.offset.dx < toPositioning.offset.dx) {
+                        final fromContentPositioning = fromState.contentPositioningController.getPositioning();
+                        toState.dragMouseOffset.value = Offset(
+                          penetration + (fromContentPositioning.size.width / 2) + 18,
+                          0,
+                        );
+                      }
+                      return;
+                    }
+                  }
                   print('Moving (dragging) column $from into $to');
                   final indexFrom = columns.indexOf(from);
                   final indexTo = columns.indexOf(to);
@@ -416,14 +446,16 @@ class _FileCell extends StatelessWidget {
 
 class _FileHeaderCell extends ConsumerStatefulWidget {
   // needed so the draggables return to the correct place
-  static final _globalKeys = <FileDataField, GlobalKey>{};
+  static final _globalKeys = <FileDataField, GlobalKey<_FileHeaderCellState>>{};
 
   final FileDataField fileField;
   final void Function(FileDataField from, FileDataField to) onDragColumn;
+  final void Function(Offset offset) onDragGlobalPositionChange;
 
   const _FileHeaderCell({
     required this.fileField,
     required this.onDragColumn,
+    required this.onDragGlobalPositionChange,
     super.key,
   });
 
@@ -431,8 +463,7 @@ class _FileHeaderCell extends ConsumerStatefulWidget {
   ConsumerState<_FileHeaderCell> createState() => _FileHeaderCellState();
 }
 
-class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
-  final cellPositioningController = PositioningController();
+class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePositioningMixin {
   final contentPositioningController = PositioningController();
   final ValueNotifier<Offset> dragMouseOffset = ValueNotifier(Offset.zero);
 
@@ -457,13 +488,20 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
               return result;
             },
             onDragEnd: (details) {
+              for (final e in _FileHeaderCell._globalKeys.entries) {
+                if (e.key == widget.fileField) continue;
+                e.value.currentState?.dragMouseOffset.value = Offset.zero;
+              }
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 dragMouseOffset.value = Offset.zero;
               });
             },
+            onDragUpdate: (details) {
+              widget.onDragGlobalPositionChange(details.globalPosition);
+            },
             feedback: Builder(
               builder: (builderContext) {
-                final positioning = cellPositioningController.getPositioning();
+                final positioning = getPositioning();
                 return IconTheme(
                   data: IconTheme.of(context),
                   child: Material(
@@ -477,12 +515,9 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
                 );
               },
             ),
-            child: PositioningMonitor(
-              controller: cellPositioningController,
-              child: _buildContent(
-                context,
-                positioningController: contentPositioningController,
-              ),
+            child: _buildContent(
+              context,
+              positioningController: contentPositioningController,
             ),
           ),
           DragTarget(
