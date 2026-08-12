@@ -287,7 +287,7 @@ class _TableViewViewport extends TwoDimensionalViewport {
       ..verticalAxisDirection = verticalAxisDirection
       ..mainAxis = mainAxis
       ..delegate = delegate
-      ..cacheExtent = cacheExtent
+      ..scrollCacheExtent = scrollCacheExtent
       ..clipBehavior = clipBehavior
       ..rowCount = rowCount
       ..colCount = colCount
@@ -433,6 +433,10 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
   @override
   void layoutChildSequence() {
     _hitTestOrderedChildren = [];
+    final cacheExtent = switch (scrollCacheExtent.style) {
+      CacheExtentStyle.pixel => scrollCacheExtent.value,
+      CacheExtentStyle.viewport => viewportDimension.height * scrollCacheExtent.value,
+    };
     final padding = this.padding + EdgeInsets.only(top: headerHeight);
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
     final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal + hardPadding.horizontal;
