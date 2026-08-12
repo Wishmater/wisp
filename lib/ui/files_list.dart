@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_icons.dart';
+import 'package:from_zero_ui/packages/fz_motion_widgets.dart';
 import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
+import 'package:from_zero_ui/packages/fz_state_positioning.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:motor/motor.dart';
 import 'package:wisp/models/file_data.dart';
 import 'package:wisp/models/file_data_field.dart';
 import 'package:wisp/providers/clipboard.dart';
@@ -105,21 +108,16 @@ class _FilesListState extends ConsumerState<FilesList> {
   }
 }
 
-class _FilesTable extends ConsumerWidget {
+class _FilesTable extends ConsumerStatefulWidget {
   final List<FileData> data;
   final ScrollController? horizontalController;
   final ScrollController? verticalController;
 
   static const rowHeight = 36.0;
   static const headerHeight = 30.0;
-  static const columns = <FileDataField>[.icon, .filename, .size, .type, .modified];
-  static const columnSizes = <double>[32, 512, 128, 128, 256];
-  static const padding = EdgeInsets.only(
-    left: 16,
-    right: 24,
-    bottom: 48,
-  );
+  static const padding = EdgeInsets.only(left: 16, right: 24, bottom: 48);
   static const selectionBorderRadius = BorderRadius.all(Radius.circular(12));
+  static const defaultColumns = <FileDataField>[.icon, .filename, .size, .type, .modified];
 
   const _FilesTable({
     required this.data,
@@ -128,14 +126,22 @@ class _FilesTable extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FilesTable> createState() => _FilesTableState();
+}
+
+class _FilesTableState extends ConsumerState<_FilesTable> {
+  late var columns = List<FileDataField>.from(_FilesTable.defaultColumns);
+  late var columnSizes = columns.map((e) => e.getDefaultWidth()).toList();
+
+  @override
+  Widget build(BuildContext context) {
     final appbarHeightValue = ref.watch(appbarHeight);
     final drawerWidthValue = ref.watch(drawerWidth);
     final currentDirectoryValue = ref.watch(currentDirectory);
     final selection = ref.watch(fileSelection.call(currentDirectoryValue));
     print(
       'BUILD _FilesTable'
-      '\n    file count: ${data.length}'
+      '\n    file count: ${widget.data.length}'
       '\n    focused: ${selection.focusedPath}'
       '\n    selected: ${selection.selectedPaths}',
     );
@@ -181,15 +187,15 @@ class _FilesTable extends ConsumerWidget {
           autofocus: true,
           canRequestFocus: true,
           child: TableView(
-            rows: data,
+            rows: widget.data,
             columns: columns,
             columnSizes: columnSizes,
-            rowHeight: headerHeight,
-            headerHeight: rowHeight,
-            horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
-            verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+            rowHeight: _FilesTable.headerHeight,
+            headerHeight: _FilesTable.rowHeight,
+            horizontalDetails: ScrollableDetails.horizontal(controller: widget.horizontalController),
+            verticalDetails: ScrollableDetails.vertical(controller: widget.verticalController),
             relayoutListenable: relayoutListener,
-            padding: padding,
+            padding: _FilesTable.padding,
             hardPadding: EdgeInsets.only(
               top: appbarHeightValue,
               left: drawerWidthValue,
@@ -201,7 +207,22 @@ class _FilesTable extends ConsumerWidget {
               return _FileCell(fileData: fileData, fileField: fileField);
             },
             headerBuilder: (context, fileField, _) {
-              return _FileHeaderCell(fileField: fileField);
+              return _FileHeaderCell(
+                fileField: fileField,
+                onMoveColumn: (from, to) {
+                  if (from == to) return;
+                  final indexFrom = columns.indexOf(from);
+                  final indexTo = columns.indexOf(to);
+                  final newColumns = List<FileDataField>.from(columns);
+                  final newColumnSizes = List<double>.from(columnSizes);
+                  newColumns.insert(indexTo, newColumns.removeAt(indexFrom));
+                  newColumnSizes.insert(indexTo, newColumnSizes.removeAt(indexFrom));
+                  setState(() {
+                    columns = newColumns;
+                    columnSizes = newColumnSizes;
+                  });
+                },
+              );
             },
             rowBackgroundBuilder: (context, fileData, rowIndex) {
               return _FileRowBackground(fileData: fileData, index: rowIndex, directory: currentDirectoryValue);
@@ -214,7 +235,7 @@ class _FilesTable extends ConsumerWidget {
             selectionBuilder: (context) {
               return DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: selectionBorderRadius,
+                  borderRadius: _FilesTable.selectionBorderRadius,
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 ),
               );
@@ -388,50 +409,105 @@ class _FileCell extends StatelessWidget {
   }
 }
 
-class _FileHeaderCell extends ConsumerWidget {
+class _FileHeaderCell extends ConsumerStatefulWidget {
+  // needed so the draggables return to the correct place
+  static final _globalKeys = <FileDataField, GlobalKey>{};
+
   final FileDataField fileField;
+  final void Function(FileDataField from, FileDataField to) onMoveColumn;
 
   const _FileHeaderCell({
     required this.fileField,
+    required this.onMoveColumn,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FileHeaderCell> createState() => _FileHeaderCellState();
+}
+
+class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
+  final controller = PositioningController();
+
+  @override
+  Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    _FileHeaderCell._globalKeys[widget.fileField] ??= GlobalKey();
     return ExcludeFocusTraversal(
-      child: InkWell(
-        onTap: fileField == .icon
-            ? null
-            : () {
-                ref.read(currentSort.notifier).setField(fileField);
-              },
-        child: Padding(
-          padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: IntrinsicWidth(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      fileField.getUiName(context),
-                      maxLines: 1,
-                      style: Theme.of(context).textTheme.labelMedium,
+      key: _FileHeaderCell._globalKeys[widget.fileField],
+      child: Stack(
+        children: [
+          MotionDraggable(
+            data: widget.fileField,
+            motion: MaterialSpringMotion.standardSpatialSlow(),
+            axis: Axis.horizontal,
+            feedback: Builder(
+              builder: (builderContext) {
+                return IconTheme(
+                  data: IconTheme.of(context),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: SizedBox.fromSize(
+                      size: controller.getPositioning().size,
+                      child: content,
                     ),
                   ),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final currentSortValue = ref.watch(currentSort);
-                      if (currentSortValue.field != fileField) {
-                        return SizedBox.shrink();
-                      }
-                      return SymbolIcon(
-                        currentSortValue.asc ? Symbols.arrow_drop_down : Symbols.arrow_drop_up,
-                        color: Theme.of(context).colorScheme.outline,
-                      );
-                    },
+                );
+              },
+            ),
+            child: PositioningMonitor(
+              controller: controller,
+              child: content,
+            ),
+          ),
+          DragTarget(
+            onMove: (details) {
+              if (details.data case final FileDataField data) {
+                if (data == widget.fileField) return;
+                print('Moving column ${data} into ${widget.fileField}');
+                widget.onMoveColumn(data, widget.fileField);
+              }
+            },
+            builder: (_, _, _) => Container(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return InkWell(
+      onTap: widget.fileField == .icon
+          ? null
+          : () {
+              ref.read(currentSort.notifier).setField(widget.fileField);
+            },
+      child: Padding(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: IntrinsicWidth(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.fileField.getUiName(context),
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
-                ],
-              ),
+                ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentSortValue = ref.watch(currentSort);
+                    if (currentSortValue.field != widget.fileField) {
+                      return SizedBox.shrink();
+                    }
+                    return SymbolIcon(
+                      currentSortValue.asc ? Symbols.arrow_drop_down : Symbols.arrow_drop_up,
+                      color: Theme.of(context).colorScheme.outline,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),

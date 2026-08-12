@@ -61,6 +61,32 @@ enum FileDataField {
       FileDataField.icon => '',
     };
   }
+
+  double getDefaultWidth() {
+    return switch (this) {
+      FileDataField.path => 512,
+      FileDataField.filename => 512,
+      FileDataField.size => 128,
+      FileDataField.modified => 160,
+      FileDataField.created => 160,
+      FileDataField.accessed => 160,
+      FileDataField.type => 128,
+      FileDataField.duration => 128,
+      FileDataField.width => 64,
+      FileDataField.height => 64,
+      FileDataField.dimensions => 64,
+      FileDataField.aspectRatio => 64,
+      FileDataField.orientation => 64,
+      FileDataField.frameRate => 64,
+      FileDataField.bitrate => 64,
+      FileDataField.track => 64,
+      FileDataField.artist => 128,
+      FileDataField.genre => 128,
+      FileDataField.album => 128,
+      FileDataField.releaseYear => 64,
+      FileDataField.icon => 32,
+    };
+  }
 }
 
 int _compareNullable<T extends Comparable<dynamic>>(T? a, T? b) {

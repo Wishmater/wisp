@@ -20,6 +20,7 @@ dependencies:
   window_manager: ^0.4.3
   material_symbols_icons: ^4.2960.0
   human_file_size: ^0.6.0
+  motor: ^1.1.0
 
   xdg_mime:
     git:

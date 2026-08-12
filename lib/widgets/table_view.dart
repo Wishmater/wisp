@@ -799,7 +799,7 @@ class _FilesChildDelegate<R, C> extends TwoDimensionalChildDelegate {
             return rowBackgroundBuilder?.call(context, rows[rowIndex], rowIndex);
           }
           if (TableViewSelectedRowVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
-            return selectionBuilder?.call(context); // TODO: 3 implement selection UI
+            return selectionBuilder?.call(context);
           }
           if (TableViewHeaderChildVicinity.checker.check(vicinity, yCount: rows.length, xCount: columns.length)) {
             return headerBuilder?.call(context, columns[colIndex], colIndex);
