@@ -1,3 +1,4 @@
+import 'package:dartx/dartx.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -131,7 +132,6 @@ class _FilesTable extends ConsumerStatefulWidget {
 class _FilesTableState extends ConsumerState<_FilesTable> {
   late var columns = List<FileDataField>.from(_FilesTable.defaultColumns);
   late var columnSizes = columns.map((e) => e.getDefaultWidth()).toList();
-  late Offset lastColumnDragGlobalOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -211,52 +211,8 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
               return _FileHeaderCell(
                 fileField: fileField,
                 key: _FileHeaderCell._globalKeys[fileField],
-                onDragGlobalPositionChange: (offset) {
-                  lastColumnDragGlobalOffset = offset;
-                },
-                onDragColumn: (from, to) {
-                  for (final e in _FileHeaderCell._globalKeys.entries) {
-                    if (e.key == from) continue;
-                    e.value.currentState?.dragMouseOffset.value = Offset.zero;
-                  }
-                  if (from == to) {
-                    return;
-                  }
-                  final fromState = _FileHeaderCell._globalKeys[from]!.currentState!;
-                  final toState = _FileHeaderCell._globalKeys[to]!.currentState!;
-                  final fromPositioning = fromState.getPositioning();
-                  final toPositioning = toState.getPositioning();
-                  final diff = toPositioning.size.width - fromPositioning.size.width;
-                  if (diff > 0) {
-                    double penetration;
-                    if (fromPositioning.offset.dx < toPositioning.offset.dx) {
-                      penetration = lastColumnDragGlobalOffset.dx - toPositioning.offset.dx;
-                    } else {
-                      penetration = toPositioning.offset.dx + toPositioning.size.width - lastColumnDragGlobalOffset.dx;
-                    }
-                    if (diff - penetration > -12) {
-                      if (fromPositioning.offset.dx < toPositioning.offset.dx) {
-                        final fromContentPositioning = fromState.contentPositioningController.getPositioning();
-                        toState.dragMouseOffset.value = Offset(
-                          penetration + (fromContentPositioning.size.width / 2) + 18,
-                          0,
-                        );
-                      }
-                      return;
-                    }
-                  }
-                  print('Moving (dragging) column $from into $to');
-                  final indexFrom = columns.indexOf(from);
-                  final indexTo = columns.indexOf(to);
-                  final newColumns = List<FileDataField>.from(columns);
-                  final newColumnSizes = List<double>.from(columnSizes);
-                  newColumns.insert(indexTo, newColumns.removeAt(indexFrom));
-                  newColumnSizes.insert(indexTo, newColumnSizes.removeAt(indexFrom));
-                  setState(() {
-                    columns = newColumns;
-                    columnSizes = newColumnSizes;
-                  });
-                },
+                onDragColumn: onDragColumn,
+                onDragGlobalPositionChange: onDragGlobalPositionChange,
               );
             },
             rowBackgroundBuilder: (context, fileData, rowIndex) {
@@ -279,6 +235,82 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
         ),
       ),
     );
+  }
+
+  void onDragGlobalPositionChange(FileDataField from, Offset dragGlobalOffset) {
+    final renderObject = context.findRenderObject()! as RenderBox;
+    final dragLocalOffset = renderObject.globalToLocal(dragGlobalOffset);
+    final fromIndex = columns.indexOf(from);
+    final fromOffset = _FilesTable.padding.left + columnSizes.sublist(0, fromIndex).sum();
+    final List<int> toIndices = [];
+    if (dragLocalOffset.dx == fromOffset) {
+      return;
+    } else if (dragLocalOffset.dx < fromOffset) {
+      double accumulatedOffset = fromOffset;
+      for (int i = fromIndex - 1; i > 0; i--) {
+        if (accumulatedOffset < dragGlobalOffset.dx) {
+          break;
+        }
+        toIndices.add(i);
+        accumulatedOffset -= columnSizes[i];
+      }
+    } else {
+      double accumulatedOffset = fromOffset;
+      for (int i = fromIndex; i < columns.length; i++) {
+        toIndices.add(i);
+        accumulatedOffset += columnSizes[i];
+        if (accumulatedOffset > dragGlobalOffset.dx) {
+          break;
+        }
+      }
+    }
+    for (final i in toIndices) {
+      onDragColumn(from, columns[i], dragGlobalOffset);
+    }
+  }
+
+  void onDragColumn(FileDataField from, FileDataField to, Offset dragGlobalOffset) {
+    for (final e in _FileHeaderCell._globalKeys.entries) {
+      if (e.key == from) continue;
+      e.value.currentState?.dragMouseOffset.value = Offset.zero;
+    }
+    if (from == to) {
+      return;
+    }
+    final fromState = _FileHeaderCell._globalKeys[from]!.currentState!;
+    final toState = _FileHeaderCell._globalKeys[to]!.currentState!;
+    final fromPositioning = fromState.getPositioning();
+    final toPositioning = toState.getPositioning();
+    final diff = toPositioning.size.width - fromPositioning.size.width;
+    if (diff > 0) {
+      double penetration;
+      if (fromPositioning.offset.dx < toPositioning.offset.dx) {
+        penetration = dragGlobalOffset.dx - toPositioning.offset.dx;
+      } else {
+        penetration = toPositioning.offset.dx + toPositioning.size.width - dragGlobalOffset.dx;
+      }
+      if (diff - penetration > -12) {
+        if (fromPositioning.offset.dx < toPositioning.offset.dx) {
+          final fromContentPositioning = fromState.contentPositioningController.getPositioning();
+          toState.dragMouseOffset.value = Offset(
+            penetration + (fromContentPositioning.size.width / 2) + 18,
+            0,
+          );
+        }
+        return;
+      }
+    }
+    print('Moving (dragging) column $from into $to');
+    final indexFrom = columns.indexOf(from);
+    final indexTo = columns.indexOf(to);
+    final newColumns = List<FileDataField>.from(columns);
+    final newColumnSizes = List<double>.from(columnSizes);
+    newColumns.insert(indexTo, newColumns.removeAt(indexFrom));
+    newColumnSizes.insert(indexTo, newColumnSizes.removeAt(indexFrom));
+    setState(() {
+      columns = newColumns;
+      columnSizes = newColumnSizes;
+    });
   }
 }
 
@@ -449,13 +481,13 @@ class _FileHeaderCell extends ConsumerStatefulWidget {
   static final _globalKeys = <FileDataField, GlobalKey<_FileHeaderCellState>>{};
 
   final FileDataField fileField;
-  final void Function(FileDataField from, FileDataField to) onDragColumn;
-  final void Function(Offset offset) onDragGlobalPositionChange;
+  final void Function(FileDataField from, Offset offset) onDragGlobalPositionChange;
+  final void Function(FileDataField from, FileDataField to, Offset dragGlobalOffset) onDragColumn;
 
   const _FileHeaderCell({
     required this.fileField,
-    required this.onDragColumn,
     required this.onDragGlobalPositionChange,
+    required this.onDragColumn,
     super.key,
   });
 
@@ -497,7 +529,7 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePosi
               });
             },
             onDragUpdate: (details) {
-              widget.onDragGlobalPositionChange(details.globalPosition);
+              widget.onDragGlobalPositionChange(widget.fileField, details.globalPosition);
             },
             feedback: Builder(
               builder: (builderContext) {
@@ -520,15 +552,17 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePosi
               positioningController: contentPositioningController,
             ),
           ),
-          DragTarget(
-            onMove: (details) {
-              if (widget.fileField == .icon) return;
-              if (details.data case final FileDataField data) {
-                widget.onDragColumn(data, widget.fileField);
-              }
-            },
-            builder: (_, _, _) => Container(),
-          ),
+          // Positioned.fill(
+          //   child: DragTarget(
+          //     onMove: (details) {
+          //       if (widget.fileField == .icon) return;
+          //       if (details.data case final FileDataField data) {
+          //         widget.onDragColumn(data, widget.fileField, );
+          //       }
+          //     },
+          //     builder: (_, _, _) => Container(),
+          //   ),
+          // ),
         ],
       ),
     );
