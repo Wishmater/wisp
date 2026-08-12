@@ -139,12 +139,12 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
     final drawerWidthValue = ref.watch(drawerWidth);
     final currentDirectoryValue = ref.watch(currentDirectory);
     final selection = ref.watch(fileSelection.call(currentDirectoryValue));
-    print(
-      'BUILD _FilesTable'
-      '\n    file count: ${widget.data.length}'
-      '\n    focused: ${selection.focusedPath}'
-      '\n    selected: ${selection.selectedPaths}',
-    );
+    // print(
+    //   'BUILD _FilesTable'
+    //   '\n    file count: ${widget.data.length}'
+    //   '\n    focused: ${selection.focusedPath}'
+    //   '\n    selected: ${selection.selectedPaths}',
+    // );
     final relayoutListener = ChangeNotifier();
     // TODO: 2 the ideal solution for this is: TableView takes a list of selected (selection would need to)
     // provide a list of FileData instead of just paths), then in didUpdateWidget, it can check if specifically
@@ -206,13 +206,15 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
             builder: (context, fileData, fileField, _, _) {
               return _FileCell(fileData: fileData, fileField: fileField);
             },
-            headerBuilder: (context, fileField, _) {
+            headerBuilder: (context, fileField, index) {
               _FileHeaderCell._globalKeys[fileField] ??= GlobalKey();
               return _FileHeaderCell(
                 fileField: fileField,
+                index: index,
                 key: _FileHeaderCell._globalKeys[fileField],
                 onDragColumn: onDragColumn,
                 onDragGlobalPositionChange: onDragGlobalPositionChange,
+                onResizeColumn: onResizeColumn,
               );
             },
             rowBackgroundBuilder: (context, fileData, rowIndex) {
@@ -235,6 +237,13 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
         ),
       ),
     );
+  }
+
+  void onResizeColumn(int index, DragUpdateDetails details) {
+    if (details.delta.dx == 0) return;
+    setState(() {
+      columnSizes[index] += details.delta.dx;
+    });
   }
 
   void onDragGlobalPositionChange(FileDataField from, Offset dragGlobalOffset) {
@@ -480,14 +489,18 @@ class _FileHeaderCell extends ConsumerStatefulWidget {
   // needed so the draggables return to the correct place
   static final _globalKeys = <FileDataField, GlobalKey<_FileHeaderCellState>>{};
 
+  final int index;
   final FileDataField fileField;
   final void Function(FileDataField from, Offset offset) onDragGlobalPositionChange;
   final void Function(FileDataField from, FileDataField to, Offset dragGlobalOffset) onDragColumn;
+  final void Function(int index, DragUpdateDetails details) onResizeColumn;
 
   const _FileHeaderCell({
+    required this.index,
     required this.fileField,
     required this.onDragGlobalPositionChange,
     required this.onDragColumn,
+    required this.onResizeColumn,
     super.key,
   });
 
@@ -500,6 +513,7 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePosi
   final ValueNotifier<Offset> dragMouseOffset = ValueNotifier(Offset.zero);
 
   static const cellPadding = 8.0;
+  static const resizeDetectorWidth = 9.0; // *2 because it is on the left and right
 
   @override
   Widget build(BuildContext context) {
@@ -563,6 +577,38 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePosi
           //     builder: (_, _, _) => Container(),
           //   ),
           // ),
+          if (widget.index >= 2)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: resizeDetectorWidth,
+              child: MouseRegion(
+                // cursor: SystemMouseCursors.resizeLeftRight,
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    widget.onResizeColumn(widget.index - 1, details);
+                  },
+                ),
+              ),
+            ),
+          if (widget.index >= 1)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: resizeDetectorWidth,
+              child: MouseRegion(
+                // cursor: SystemMouseCursors.resizeLeftRight,
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    widget.onResizeColumn(widget.index, details);
+                  },
+                ),
+              ),
+            ),
         ],
       ),
     );
