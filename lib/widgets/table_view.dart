@@ -436,7 +436,7 @@ class _RenderTableViewViewport extends RenderTwoDimensionalViewport {
     final padding = this.padding + EdgeInsets.only(top: headerHeight);
     final columnOffsets = List.generate(columnSizes.length, (i) => columnSizes.sublist(0, i).sum());
     final maxWidth = columnOffsets.last + columnSizes.last + padding.horizontal + hardPadding.horizontal;
-    final maxHeight = rowHeight * rowCount + padding.vertical + hardPadding.horizontal;
+    final maxHeight = rowHeight * rowCount + padding.vertical + hardPadding.vertical;
     horizontalOffset.applyContentDimensions(0, (maxWidth - viewportDimension.width).coerceAtLeast(0));
     verticalOffset.applyContentDimensions(0, (maxHeight - viewportDimension.height).coerceAtLeast(0));
 
