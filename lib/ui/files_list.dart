@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:from_zero_ui/packages/fz_icons.dart';
-import 'package:from_zero_ui/packages/fz_motion_widgets.dart';
 import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
 import 'package:from_zero_ui/packages/fz_state_positioning.dart';
@@ -132,6 +131,7 @@ class _FilesTable extends ConsumerStatefulWidget {
 class _FilesTableState extends ConsumerState<_FilesTable> {
   late var columns = List<FileDataField>.from(_FilesTable.defaultColumns);
   late var columnSizes = columns.map((e) => e.getDefaultWidth()).toList();
+  FileDataField? lastColumnDragHovered;
 
   @override
   Widget build(BuildContext context) {
@@ -207,10 +207,15 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
               return _FileCell(fileData: fileData, fileField: fileField);
             },
             headerBuilder: (context, fileField, _) {
+              _FileHeaderCell._globalKeys[fileField] ??= GlobalKey();
               return _FileHeaderCell(
                 fileField: fileField,
-                onMoveColumn: (from, to) {
+                key: _FileHeaderCell._globalKeys[fileField],
+                onDragColumn: (from, to) {
+                  if (lastColumnDragHovered == to) return; // fix weird cases where you would flicker back and forth
+                  lastColumnDragHovered = to;
                   if (from == to) return;
+                  print('Moving (dragging) column $from into $to');
                   final indexFrom = columns.indexOf(from);
                   final indexTo = columns.indexOf(to);
                   final newColumns = List<FileDataField>.from(columns);
@@ -414,11 +419,12 @@ class _FileHeaderCell extends ConsumerStatefulWidget {
   static final _globalKeys = <FileDataField, GlobalKey>{};
 
   final FileDataField fileField;
-  final void Function(FileDataField from, FileDataField to) onMoveColumn;
+  final void Function(FileDataField from, FileDataField to) onDragColumn;
 
   const _FileHeaderCell({
     required this.fileField,
-    required this.onMoveColumn,
+    required this.onDragColumn,
+    super.key,
   });
 
   @override
@@ -426,45 +432,64 @@ class _FileHeaderCell extends ConsumerStatefulWidget {
 }
 
 class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
-  final controller = PositioningController();
+  final cellPositioningController = PositioningController();
+  final contentPositioningController = PositioningController();
+  final ValueNotifier<Offset> dragMouseOffset = ValueNotifier(Offset.zero);
+
+  static const cellPadding = 8.0;
 
   @override
   Widget build(BuildContext context) {
-    final content = _buildContent(context);
-    _FileHeaderCell._globalKeys[widget.fileField] ??= GlobalKey();
     return ExcludeFocusTraversal(
-      key: _FileHeaderCell._globalKeys[widget.fileField],
       child: Stack(
         children: [
           MotionDraggable(
             data: widget.fileField,
             motion: MaterialSpringMotion.standardSpatialSlow(),
             axis: Axis.horizontal,
+            dragAnchorStrategy: (Draggable<Object> draggable, BuildContext context, Offset position) {
+              final renderObject = context.findRenderObject()! as RenderBox;
+              final result = renderObject.globalToLocal(position);
+              final contentPositioning = contentPositioningController.getPositioning();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                dragMouseOffset.value = result - Offset(contentPositioning.size.width / 2 + cellPadding, 0);
+              });
+              return result;
+            },
+            onDragEnd: (details) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                dragMouseOffset.value = Offset.zero;
+              });
+            },
             feedback: Builder(
               builder: (builderContext) {
+                final positioning = cellPositioningController.getPositioning();
                 return IconTheme(
                   data: IconTheme.of(context),
                   child: Material(
                     type: MaterialType.transparency,
-                    child: SizedBox.fromSize(
-                      size: controller.getPositioning().size,
-                      child: content,
+                    child: SizedBox(
+                      // width: positioning.size.width,
+                      height: positioning.size.height,
+                      child: _buildContent(context),
                     ),
                   ),
                 );
               },
             ),
             child: PositioningMonitor(
-              controller: controller,
-              child: content,
+              controller: cellPositioningController,
+              child: _buildContent(
+                context,
+                positioningController: contentPositioningController,
+              ),
             ),
           ),
           DragTarget(
             onMove: (details) {
+              if (widget.fileField == .icon) return;
               if (details.data case final FileDataField data) {
-                if (data == widget.fileField) return;
-                print('Moving column ${data} into ${widget.fileField}');
-                widget.onMoveColumn(data, widget.fileField);
+                widget.onDragColumn(data, widget.fileField);
               }
             },
             builder: (_, _, _) => Container(),
@@ -474,40 +499,60 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
-    return InkWell(
-      onTap: widget.fileField == .icon
-          ? null
-          : () {
-              ref.read(currentSort.notifier).setField(widget.fileField);
-            },
-      child: Padding(
-        padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: IntrinsicWidth(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.fileField.getUiName(context),
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.labelMedium,
+  Widget _buildContent(
+    BuildContext context, {
+    PositioningController? positioningController,
+  }) {
+    Widget text = Text(
+      widget.fileField.getUiName(context),
+      maxLines: 1,
+      style: Theme.of(context).textTheme.labelMedium,
+    );
+    if (positioningController != null) {
+      text = PositioningMonitor(
+        controller: positioningController,
+        child: text,
+      );
+    }
+    return ValueListenableBuilder(
+      valueListenable: dragMouseOffset,
+      builder: (context, mouseOffset, child) {
+        return MotionPadding(
+          motion: MaterialSpringMotion.standardSpatialSlow(),
+          padding: EdgeInsetsGeometry.only(left: mouseOffset.dx),
+          child: child!,
+        );
+      },
+      child: InkWell(
+        onTap: widget.fileField == .icon
+            ? null
+            : () {
+                ref.read(currentSort.notifier).setField(widget.fileField);
+              },
+        child: Padding(
+          padding: EdgeInsetsGeometry.symmetric(horizontal: cellPadding),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: IntrinsicWidth(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: text,
                   ),
-                ),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final currentSortValue = ref.watch(currentSort);
-                    if (currentSortValue.field != widget.fileField) {
-                      return SizedBox.shrink();
-                    }
-                    return SymbolIcon(
-                      currentSortValue.asc ? Symbols.arrow_drop_down : Symbols.arrow_drop_up,
-                      color: Theme.of(context).colorScheme.outline,
-                    );
-                  },
-                ),
-              ],
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentSortValue = ref.watch(currentSort);
+                      if (currentSortValue.field != widget.fileField) {
+                        return SizedBox.shrink();
+                      }
+                      return SymbolIcon(
+                        currentSortValue.asc ? Symbols.arrow_drop_down : Symbols.arrow_drop_up,
+                        color: Theme.of(context).colorScheme.outline,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
