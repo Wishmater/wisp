@@ -178,7 +178,10 @@ class FileSelectionNotifier extends Notifier<FileSelection> {
     }
   }
 
-  void onClicked(String newPath) {
+  void onClicked(
+    String newPath, {
+    required bool isPrimary,
+  }) {
     final initialFocusedPath = state.focusedPath;
     if (initialFocusedPath != newPath) {
       state.focusedPath = newPath;
@@ -217,9 +220,16 @@ class FileSelectionNotifier extends Notifier<FileSelection> {
       }
       ref.notifyListeners();
     } else {
-      if (state.selectedPaths.length != 1 || state.selectedPaths.first != newPath) {
-        state.selectedPaths = [newPath];
-        ref.notifyListeners();
+      if (isPrimary) {
+        if (state.selectedPaths.length != 1 || state.selectedPaths.first != newPath) {
+          state.selectedPaths = [newPath];
+          ref.notifyListeners();
+        }
+      } else {
+        if (!state.selectedPaths.contains(newPath)) {
+          state.selectedPaths = [newPath];
+          ref.notifyListeners();
+        }
       }
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:from_zero_ui/packages/fz_actions.dart';
 import 'package:from_zero_ui/packages/fz_icons.dart';
 import 'package:from_zero_ui/packages/fz_opacity_gradient.dart';
 import 'package:from_zero_ui/packages/fz_scrollbar.dart';
@@ -16,6 +17,8 @@ import 'package:wisp/providers/explorer.dart';
 import 'package:wisp/providers/files.dart';
 import 'package:wisp/providers/scaffold.dart';
 import 'package:wisp/ui/file_conflict_dialog.dart';
+import 'package:wisp/widgets/action.dart';
+import 'package:wisp/widgets/context_menu.dart';
 import 'package:wisp/widgets/gestures.dart';
 import 'package:wisp/widgets/table_view.dart';
 
@@ -115,7 +118,7 @@ class _FilesTable extends ConsumerStatefulWidget {
 
   static const rowHeight = 36.0;
   static const headerHeight = 30.0;
-  static const padding = EdgeInsets.only(left: 16, right: 24, bottom: 48);
+  static const padding = EdgeInsets.only(left: 16, right: 24, bottom: 96);
   static const selectionBorderRadius = BorderRadius.all(Radius.circular(12));
   static const defaultColumns = <FileDataField>[.icon, .filename, .size, .type, .modified];
 
@@ -183,56 +186,80 @@ class _FilesTableState extends ConsumerState<_FilesTable> {
             );
           },
         },
-        child: Focus(
-          autofocus: true,
-          canRequestFocus: true,
-          child: TableView(
-            rows: widget.data,
-            columns: columns,
-            columnSizes: columnSizes,
-            rowHeight: _FilesTable.headerHeight,
-            headerHeight: _FilesTable.rowHeight,
-            horizontalDetails: ScrollableDetails.horizontal(controller: widget.horizontalController),
-            verticalDetails: ScrollableDetails.vertical(controller: widget.verticalController),
-            relayoutListenable: relayoutListener,
-            padding: _FilesTable.padding,
-            hardPadding: EdgeInsets.only(
-              top: appbarHeightValue,
-              left: drawerWidthValue,
+        child: RawGestureDetector(
+          gestures: <Type, GestureRecognizerFactory>{
+            // Hack to prevent the delay on single click when a double click action is declared
+            // https://github.com/flutter/flutter/issues/110300#issuecomment-1239969799
+            SerialTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<SerialTapGestureRecognizer>(
+              () => SerialTapGestureRecognizer(
+                allowedButtonsFilter: (int buttons) =>
+                    buttons != 0 && (buttons & ~(kPrimaryButton | kSecondaryButton | kTertiaryButton)) == 0,
+              ),
+              (SerialTapGestureRecognizer instance) {
+                instance.onSerialTapDown = (SerialTapDownDetails details) {
+                  final notifier = ref.read(fileSelection.call(currentDirectoryValue).notifier);
+                  // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+                  if (notifier.state.selectedPaths.isNotEmpty) {
+                    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+                    notifier.state.selectedPaths = [];
+                    // ignore: invalid_use_of_protected_member
+                    notifier.ref.notifyListeners();
+                  }
+                };
+              },
             ),
-            selectedChecker: (fileData, _) {
-              return selection.selectedPaths.contains(fileData.path);
-            },
-            builder: (context, fileData, fileField, _, _) {
-              return _FileCell(fileData: fileData, fileField: fileField);
-            },
-            headerBuilder: (context, fileField, index) {
-              _FileHeaderCell._globalKeys[fileField] ??= GlobalKey();
-              return _FileHeaderCell(
-                fileField: fileField,
-                index: index,
-                key: _FileHeaderCell._globalKeys[fileField],
-                onDragColumn: onDragColumn,
-                onDragGlobalPositionChange: onDragGlobalPositionChange,
-                onResizeColumn: onResizeColumn,
-              );
-            },
-            rowBackgroundBuilder: (context, fileData, rowIndex) {
-              return _FileRowBackground(fileData: fileData, index: rowIndex, directory: currentDirectoryValue);
-            },
-            headerBackgroundBuilder: (context) {
-              return Material(
-                color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: 0.75),
-              );
-            },
-            selectionBuilder: (context) {
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: _FilesTable.selectionBorderRadius,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                ),
-              );
-            },
+          },
+          child: Focus(
+            autofocus: true,
+            canRequestFocus: true,
+            child: TableView(
+              rows: widget.data,
+              columns: columns,
+              columnSizes: columnSizes,
+              rowHeight: _FilesTable.headerHeight,
+              headerHeight: _FilesTable.rowHeight,
+              horizontalDetails: ScrollableDetails.horizontal(controller: widget.horizontalController),
+              verticalDetails: ScrollableDetails.vertical(controller: widget.verticalController),
+              relayoutListenable: relayoutListener,
+              padding: _FilesTable.padding,
+              hardPadding: EdgeInsets.only(
+                top: appbarHeightValue,
+                left: drawerWidthValue,
+              ),
+              selectedChecker: (fileData, _) {
+                return selection.selectedPaths.contains(fileData.path);
+              },
+              builder: (context, fileData, fileField, _, _) {
+                return _FileCell(fileData: fileData, fileField: fileField);
+              },
+              headerBuilder: (context, fileField, index) {
+                _FileHeaderCell._globalKeys[fileField] ??= GlobalKey();
+                return _FileHeaderCell(
+                  fileField: fileField,
+                  index: index,
+                  key: _FileHeaderCell._globalKeys[fileField],
+                  onDragColumn: onDragColumn,
+                  onDragGlobalPositionChange: onDragGlobalPositionChange,
+                  onResizeColumn: onResizeColumn,
+                );
+              },
+              rowBackgroundBuilder: (context, fileData, rowIndex) {
+                return _FileRowBackground(fileData: fileData, index: rowIndex, directory: currentDirectoryValue);
+              },
+              headerBackgroundBuilder: (context) {
+                return Material(
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: 0.75),
+                );
+              },
+              selectionBuilder: (context) {
+                return DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: _FilesTable.selectionBorderRadius,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -367,14 +394,15 @@ class _FileRowBackground extends ConsumerWidget {
                 // https://github.com/flutter/flutter/issues/110300#issuecomment-1239969799
                 SerialTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<SerialTapGestureRecognizer>(
                   () => SerialTapGestureRecognizer(
-                    allowedButtonsFilter: (int buttons) => buttons == kPrimaryButton,
+                    allowedButtonsFilter: (int buttons) =>
+                        buttons != 0 && (buttons & ~(kPrimaryButton | kSecondaryButton | kTertiaryButton)) == 0,
                   ),
                   (SerialTapGestureRecognizer instance) {
                     instance.onSerialTapDown = (SerialTapDownDetails details) {
                       if (details.count == 1) {
                         final currentDirectoryValue = ref.read(currentDirectory);
                         final notifier = ref.read(fileSelection.call(currentDirectoryValue).notifier);
-                        notifier.onClicked(fileData.path);
+                        notifier.onClicked(fileData.path, isPrimary: details.buttons == kPrimaryButton);
                       } else if (details.count == 2) {
                         if (fileData.typeData?.type == .directory) {
                           ref.read(currentDirectory.notifier).setCurrentDirectory(fileData.path);
@@ -441,7 +469,7 @@ class _FileRowBackground extends ConsumerWidget {
   }
 }
 
-class _FileCell extends StatelessWidget {
+class _FileCell extends ConsumerWidget {
   final FileData fileData;
   final FileDataField fileField;
 
@@ -451,7 +479,7 @@ class _FileCell extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (fileField == .icon) {
       return IgnorePointer(
         child: Container(
@@ -471,15 +499,49 @@ class _FileCell extends StatelessWidget {
       );
     }
     final value = fileData.getFormatted(context, fileField);
-    return IgnorePointer(
-      child: Container(
-        padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
-        alignment: Alignment.centerLeft,
-        // TODO: 1 implement a good Text widget that shows truncated as a tooltip on hover, truncates smartly, etc.
-        child: Text(
-          value ?? '',
-          maxLines: 1,
-        ), // TODO: 2 show loading if value is null?
+    return ContextMenu(
+      barrierColor: Colors.transparent,
+      actions: [
+        MenuAction(
+          icon: SymbolIcon(Symbols.disabled_by_default),
+          title: 'Open with *DEFAULT*',
+          onTap: (_) {},
+        ),
+        MenuAction(
+          icon: SymbolIcon(Symbols.order_play),
+          title: 'Open With...',
+          onTap: (_) {},
+        ),
+        MenuAction.divider(),
+        MenuAction(
+          icon: SymbolIcon(Symbols.content_copy),
+          title: 'Copy',
+          onTap: (_) {
+            final currentDirectoryValue = ref.read(currentDirectory);
+            final selection = ref.read(fileSelection.call(currentDirectoryValue));
+            ref.read(clipboard.notifier).setData(ClipboardFilesData(.copy, List.from(selection.selectedPaths)));
+          },
+        ),
+        MenuAction(
+          icon: SymbolIcon(Symbols.content_cut),
+          title: 'Cut',
+          onTap: (_) {
+            final currentDirectoryValue = ref.read(currentDirectory);
+            final selection = ref.read(fileSelection.call(currentDirectoryValue));
+            ref.read(clipboard.notifier).setData(ClipboardFilesData(.cut, List.from(selection.selectedPaths)));
+          },
+        ),
+      ],
+      child: IgnorePointer(
+        child: Container(
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 6, vertical: 4),
+          alignment: Alignment.centerLeft,
+          // TODO: 1 implement a good Text widget that shows truncated as a tooltip on hover, truncates smartly, etc.
+          child: Text(
+            value ?? '',
+            maxLines: 1,
+          ), // TODO: 2 show loading if value is null?
+        ),
       ),
     );
   }
@@ -632,6 +694,7 @@ class _FileHeaderCellState extends ConsumerState<_FileHeaderCell> with StatePosi
     return ValueListenableBuilder(
       valueListenable: dragMouseOffset,
       builder: (context, mouseOffset, child) {
+        // TODO: 3 if instead of doing this here we add it as extra offset to the MotionDraggable we gain clarity, performance and the animation is cleaner
         return MotionPadding(
           motion: MaterialSpringMotion.standardSpatialSlow(),
           padding: EdgeInsetsGeometry.only(left: mouseOffset.dx),
